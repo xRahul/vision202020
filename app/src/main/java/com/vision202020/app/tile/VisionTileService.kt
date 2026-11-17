@@ -16,6 +16,8 @@ class VisionTileService : TileService() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Main)
     private var observerJob: Job? = null
+    private var lastState: Int? = null
+    private var lastSubtitle: String? = null
 
     override fun onStartListening() {
         super.onStartListening()
@@ -29,6 +31,8 @@ class VisionTileService : TileService() {
 
     override fun onStopListening() {
         observerJob?.cancel()
+        lastState = null
+        lastSubtitle = null
         super.onStopListening()
     }
 
@@ -45,11 +49,15 @@ class VisionTileService : TileService() {
     private fun updateTile(status: TimerStatus) {
         val tile = qsTile ?: return
         val (state, subtitle) = mapStatusToTileState(status)
-        tile.state = state
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            tile.subtitle = subtitle
+        if (state != lastState || subtitle != lastSubtitle) {
+            lastState = state
+            lastSubtitle = subtitle
+            tile.state = state
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                tile.subtitle = subtitle
+            }
+            tile.updateTile()
         }
-        tile.updateTile()
     }
 
     companion object {

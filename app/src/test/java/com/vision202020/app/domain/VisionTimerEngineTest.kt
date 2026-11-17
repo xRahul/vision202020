@@ -157,6 +157,8 @@ class VisionTimerEngineTest {
         // Break finishes and next cycle begins automatically
         val nextState = engine.state.value
         assertTrue("Expected new Working cycle, got $nextState", nextState is TimerStatus.Working)
+        // Verified Critical 2: since screen was off when break finished, next cycle MUST be paused!
+        assertTrue("Next cycle should remain paused while screen is off", (nextState as TimerStatus.Working).isScreenPaused)
     }
 
     @Test

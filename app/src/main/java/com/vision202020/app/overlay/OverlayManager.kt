@@ -25,6 +25,7 @@ class OverlayManager(private val context: Context) {
         context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
     private var overlayView: View? = null
+    private var activeLifecycleOwner: OverlayLifecycleOwner? = null
     private val remainingSecondsState = mutableIntStateOf(20)
 
     private var _isShowing: Boolean = false
@@ -74,6 +75,7 @@ class OverlayManager(private val context: Context) {
         lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START)
         lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        activeLifecycleOwner = lifecycleOwner
 
         val composeView = ComposeView(context).apply {
             setViewTreeLifecycleOwner(lifecycleOwner)
@@ -102,6 +104,7 @@ class OverlayManager(private val context: Context) {
         } catch (e: Exception) {
             _isShowing = false
             overlayView = null
+            activeLifecycleOwner = null
         }
     }
 
@@ -110,13 +113,20 @@ class OverlayManager(private val context: Context) {
     }
 
     fun dismissOverlay() {
-        if (!_isShowing || overlayView == null) return
+        if (!_isShowing && overlayView == null) return
         try {
+            activeLifecycleOwner?.apply {
+                handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+                handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+                handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+            }
+            (overlayView as? ComposeView)?.disposeComposition()
             overlayView?.let { windowManager.removeViewImmediate(it) }
         } catch (e: IllegalArgumentException) {
             // Already detached
         } finally {
             overlayView = null
+            activeLifecycleOwner = null
             _isShowing = false
         }
     }

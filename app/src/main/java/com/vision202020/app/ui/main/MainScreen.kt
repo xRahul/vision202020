@@ -51,13 +51,15 @@ fun MainScreen(
     status: TimerStatus,
     preferences: UserPreferences,
     hasOverlayPermission: Boolean,
+    hasNotificationPermission: Boolean,
     onStart: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onStop: () -> Unit,
     onTriggerBreak: () -> Unit,
     onOpenSettings: () -> Unit,
-    onPermissionRequested: () -> Unit,
+    onRequestOverlayPermission: () -> Unit,
+    onRequestNotificationPermission: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -92,7 +94,9 @@ fun MainScreen(
             // Permission card if needed
             PermissionGateCard(
                 hasOverlayPermission = hasOverlayPermission,
-                onPermissionRequested = onPermissionRequested
+                hasNotificationPermission = hasNotificationPermission,
+                onRequestOverlayPermission = onRequestOverlayPermission,
+                onRequestNotificationPermission = onRequestNotificationPermission
             )
 
             // Mode Badge

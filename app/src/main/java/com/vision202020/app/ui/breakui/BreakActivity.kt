@@ -8,7 +8,9 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.vision202020.app.domain.TimerStatus
@@ -24,9 +26,9 @@ class BreakActivity : ComponentActivity() {
         configureLockScreenDisplay()
 
         setContent {
-            val status = VisionTimerService.timerStatus.value
-            val remainingSec = if (status is TimerStatus.RestBreak) status.remainingSeconds else 20
-            val totalSec = if (status is TimerStatus.RestBreak) status.totalSeconds else 20
+            val status by VisionTimerService.timerStatus.collectAsStateWithLifecycle()
+            val remainingSec = if (status is TimerStatus.RestBreak) (status as TimerStatus.RestBreak).remainingSeconds else 20
+            val totalSec = if (status is TimerStatus.RestBreak) (status as TimerStatus.RestBreak).totalSeconds else 20
 
             BreakScreenContent(
                 remainingSeconds = remainingSec,
@@ -58,13 +60,10 @@ class BreakActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-            keyguardManager?.requestDismissKeyguard(this, null)
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
                         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             )

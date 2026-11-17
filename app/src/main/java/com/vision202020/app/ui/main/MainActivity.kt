@@ -1,15 +1,19 @@
 package com.vision202020.app.ui.main
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vision202020.app.data.PreferencesRepositoryImpl
 import com.vision202020.app.data.dataStore
@@ -20,21 +24,27 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: MainViewModel
 
+    private var hasOverlayPermission by mutableStateOf(false)
+    private var hasNotificationPermission by mutableStateOf(false)
+    private var isSettingsOpen by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val repository = PreferencesRepositoryImpl(applicationContext.dataStore)
         viewModel = MainViewModel(repository)
 
+        refreshPermissionStates()
+
         setContent {
             val status by viewModel.timerStatus.collectAsStateWithLifecycle()
             val preferences by viewModel.userPreferences.collectAsStateWithLifecycle()
 
-            var hasOverlayPermission by remember {
-                mutableStateOf(checkOverlayPermission())
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                hasNotificationPermission = isGranted
             }
-
-            var isSettingsOpen by remember { mutableStateOf(false) }
 
             if (isSettingsOpen) {
                 SettingsScreen(
@@ -54,14 +64,20 @@ class MainActivity : ComponentActivity() {
                     status = status,
                     preferences = preferences,
                     hasOverlayPermission = hasOverlayPermission,
+                    hasNotificationPermission = hasNotificationPermission,
                     onStart = { VisionTimerService.start(this) },
                     onPause = { sendServiceAction(VisionTimerService.ACTION_PAUSE) },
                     onResume = { sendServiceAction(VisionTimerService.ACTION_RESUME) },
                     onStop = { VisionTimerService.stop(this) },
                     onTriggerBreak = { sendServiceAction(VisionTimerService.ACTION_TRIGGER_BREAK) },
                     onOpenSettings = { isSettingsOpen = true },
-                    onPermissionRequested = {
-                        hasOverlayPermission = checkOverlayPermission()
+                    onRequestOverlayPermission = {
+                        refreshPermissionStates()
+                    },
+                    onRequestNotificationPermission = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
                     }
                 )
             }
@@ -70,13 +86,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Re-check permissions when returning from system settings
-        checkOverlayPermission()
+        refreshPermissionStates()
     }
 
-    private fun checkOverlayPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    private fun refreshPermissionStates() {
+        hasOverlayPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+
+        hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
         } else {
             true
         }

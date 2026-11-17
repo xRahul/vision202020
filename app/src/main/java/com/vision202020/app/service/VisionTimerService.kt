@@ -16,6 +16,8 @@ import com.vision202020.app.data.dataStore
 import com.vision202020.app.domain.TimerStatus
 import com.vision202020.app.domain.VisionTimerEngine
 import com.vision202020.app.overlay.OverlayManager
+import androidx.glance.appwidget.updateAll
+import com.vision202020.app.widget.VisionGlanceWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -50,7 +52,12 @@ class VisionTimerService : Service() {
         engine = VisionTimerEngine(currentPrefs)
 
         screenReceiver = ScreenStateReceiver(
-            onScreenOn = { engine.onScreenOn() },
+            onScreenOn = {
+                engine.onScreenOn()
+                if (engine.state.value is TimerStatus.RestBreak) {
+                    handleStateChange(engine.state.value)
+                }
+            },
             onScreenOff = {
                 engine.onScreenOff()
                 overlayManager.dismissOverlay()
@@ -138,6 +145,8 @@ class VisionTimerService : Service() {
                 if (currentPrefs.enforcementMode == EnforcementMode.BLOCKER_OVERLAY && overlayManager.canDrawOverlays()) {
                     overlayManager.showBreakOverlay(
                         remainingSeconds = status.remainingSeconds,
+                        totalSeconds = currentPrefs.restDurationSeconds,
+                        strictMode = currentPrefs.strictMode,
                         onSkip = { engine.completeBreak() },
                         onSnooze = { engine.snooze() }
                     )
@@ -157,6 +166,14 @@ class VisionTimerService : Service() {
             is TimerStatus.Idle -> {
                 overlayManager.dismissOverlay()
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
+            }
+        }
+
+        serviceScope.launch {
+            try {
+                VisionGlanceWidget().updateAll(this@VisionTimerService)
+            } catch (e: Exception) {
+                // Ignore if no active glance widget attached
             }
         }
     }

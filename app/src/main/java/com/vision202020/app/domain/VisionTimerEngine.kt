@@ -107,11 +107,12 @@ class VisionTimerEngine(
 
     fun completeBreak() {
         val totalSec = prefs.workDurationMinutes * 60
+        val isScreenCurrentlyOff = screenOffTimestampMs > 0L && prefs.timerProfile == TimerProfile.MOBILE_SCREEN_AWARE
         _state.value = TimerStatus.Working(
             remainingSeconds = totalSec,
             elapsedSeconds = 0,
             totalSeconds = totalSec,
-            isScreenPaused = false
+            isScreenPaused = isScreenCurrentlyOff
         )
     }
 
