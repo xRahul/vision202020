@@ -48,11 +48,11 @@ val computedVersionCode = getGitVersionCode()
 val computedVersionName = getGitVersionName()
 
 android {
-    namespace = "com.vision202020.app"
+    namespace = "in.rahulja.vision202020"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.vision202020.app"
+        applicationId = "in.rahulja.vision202020"
         minSdk = 26
         targetSdk = 34
         versionCode = computedVersionCode

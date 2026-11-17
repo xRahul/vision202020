@@ -55,16 +55,47 @@ jobs:
             fi
 
             NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+            VERSION="${MAJOR}.${MINOR}.${PATCH}"
             echo "Computed new tag: $NEW_TAG"
+
+            GIT_COUNT=$(git rev-list --count HEAD)
+            VERSION_CODE=$((GIT_COUNT + 1))
+
+            if [ -f "metadata/in.rahulja.vision202020.yml" ]; then
+              python3 - <<EOF
+import re
+with open('metadata/in.rahulja.vision202020.yml', 'r') as f:
+    content = f.read()
+
+content = re.sub(r'CurrentVersion:\s*.+', f'CurrentVersion: $VERSION', content)
+content = re.sub(r'CurrentVersionCode:\s*.+', f'CurrentVersionCode: $VERSION_CODE', content)
+
+new_build = f'''Builds:
+  - versionName: $VERSION
+    versionCode: $VERSION_CODE
+    commit: $NEW_TAG
+    subdir: app
+    gradle:
+      - yes'''
+content = re.sub(r'Builds:\s*\n\s*-\s*versionName:[\s\S]*?gradle:\s*\n\s*-\s*yes', new_build, content)
+
+with open('metadata/in.rahulja.vision202020.yml', 'w') as f:
+    f.write(content)
+EOF
+            fi
+
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add metadata/in.rahulja.vision202020.yml
+            git commit -m "chore(release): bump version to $NEW_TAG [skip ci]" || true
+            git push origin main
             git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
             git push origin "$NEW_TAG"
             TAG_NAME="$NEW_TAG"
           else
             TAG_NAME="${GITHUB_REF#refs/tags/}"
+            VERSION="${TAG_NAME#v}"
           fi
-          VERSION="${TAG_NAME#v}"
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -114,8 +145,8 @@ jobs:
         run: |
           mkdir -p artifacts
           VERSION="${{ steps.versioning.outputs.version }}"
-          cp app/build/outputs/apk/debug/app-debug.apk "artifacts/vision202020-v${VERSION}-debug.apk"
-          cp app/build/outputs/apk/release/app-release.apk "artifacts/vision202020-v${VERSION}-release.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "artifacts/in.rahulja.vision202020-v${VERSION}-debug.apk"
+          cp app/build/outputs/apk/release/app-release.apk "artifacts/in.rahulja.vision202020-v${VERSION}-release.apk"
           ls -la artifacts/
 
       - name: Publish GitHub Release
@@ -127,5 +158,5 @@ jobs:
           prerelease: ${{ contains(steps.versioning.outputs.tag_name, '-') }}
           generate_release_notes: true
           files: |
-            artifacts/vision202020-*-debug.apk
-            artifacts/vision202020-*-release.apk
+            artifacts/in.rahulja.vision202020-*-debug.apk
+            artifacts/in.rahulja.vision202020-*-release.apk
