@@ -116,6 +116,11 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
 }
 
 tasks.register("printVersion") {
