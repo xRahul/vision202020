@@ -53,6 +53,24 @@ class NotificationHelperTest {
         val notification = notificationHelper.buildTimerNotification(status)
         assertNotNull(notification)
         assertEquals(NotificationHelper.CHANNEL_ID_TIMER, notification.channelId)
+        val actions = notification.actions
+        assertNotNull(actions)
+        // Working state should have Pause, Take Break, Stop
+        assertEquals(3, actions.size)
+        assertEquals("Pause", actions[0].title.toString())
+        assertEquals("Rest Now", actions[1].title.toString())
+        assertEquals("Stop", actions[2].title.toString())
+    }
+
+    @Test
+    fun testBuildNotificationIdleStateHasStartAction() {
+        notificationHelper.createChannels()
+        val notification = notificationHelper.buildTimerNotification(TimerStatus.Idle)
+        assertNotNull(notification)
+        val actions = notification.actions
+        assertNotNull(actions)
+        assertEquals(1, actions.size)
+        assertEquals("Start", actions[0].title.toString())
     }
 
     @Test

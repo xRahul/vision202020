@@ -117,42 +117,62 @@ class NotificationHelper(private val context: Context) {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
 
-        // Action buttons
-        if (status is TimerStatus.Working) {
-            if (status.isScreenPaused) {
-                val resumeIntent = Intent(context, VisionTimerService::class.java).apply {
-                    action = VisionTimerService.ACTION_RESUME
+        // Action buttons tailored to current state
+        when (status) {
+            is TimerStatus.Working -> {
+                if (status.isScreenPaused) {
+                    val resumeIntent = Intent(context, VisionTimerService::class.java).apply {
+                        action = VisionTimerService.ACTION_RESUME
+                    }
+                    val resumePending = PendingIntent.getService(
+                        context, 1, resumeIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                    )
+                    builder.addAction(android.R.drawable.ic_media_play, context.getString(R.string.action_resume), resumePending)
+                } else {
+                    val pauseIntent = Intent(context, VisionTimerService::class.java).apply {
+                        action = VisionTimerService.ACTION_PAUSE
+                    }
+                    val pausePending = PendingIntent.getService(
+                        context, 2, pauseIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                    )
+                    builder.addAction(android.R.drawable.ic_media_pause, context.getString(R.string.action_pause), pausePending)
                 }
-                val resumePending = PendingIntent.getService(
-                    context, 1, resumeIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                )
-                builder.addAction(android.R.drawable.ic_media_play, context.getString(R.string.action_resume), resumePending)
-            } else {
-                val pauseIntent = Intent(context, VisionTimerService::class.java).apply {
-                    action = VisionTimerService.ACTION_PAUSE
+
+                val skipIntent = Intent(context, VisionTimerService::class.java).apply {
+                    action = VisionTimerService.ACTION_TRIGGER_BREAK
                 }
-                val pausePending = PendingIntent.getService(
-                    context, 2, pauseIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                val skipPending = PendingIntent.getService(
+                    context, 3, skipIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
-                builder.addAction(android.R.drawable.ic_media_pause, context.getString(R.string.action_pause), pausePending)
-            }
+                builder.addAction(android.R.drawable.ic_media_next, context.getString(R.string.action_take_break), skipPending)
 
-            val skipIntent = Intent(context, VisionTimerService::class.java).apply {
-                action = VisionTimerService.ACTION_TRIGGER_BREAK
+                val stopIntent = Intent(context, VisionTimerService::class.java).apply {
+                    action = VisionTimerService.ACTION_STOP
+                }
+                val stopPending = PendingIntent.getService(
+                    context, 4, stopIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+                builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, context.getString(R.string.action_stop), stopPending)
             }
-            val skipPending = PendingIntent.getService(
-                context, 3, skipIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            builder.addAction(android.R.drawable.ic_media_next, context.getString(R.string.action_take_break), skipPending)
+            is TimerStatus.RestBreak, is TimerStatus.Snoozed -> {
+                val stopIntent = Intent(context, VisionTimerService::class.java).apply {
+                    action = VisionTimerService.ACTION_STOP
+                }
+                val stopPending = PendingIntent.getService(
+                    context, 4, stopIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+                builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, context.getString(R.string.action_stop), stopPending)
+            }
+            is TimerStatus.Idle -> {
+                val startIntent = Intent(context, VisionTimerService::class.java).apply {
+                    action = VisionTimerService.ACTION_START
+                }
+                val startPending = PendingIntent.getService(
+                    context, 0, startIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+                builder.addAction(android.R.drawable.ic_media_play, context.getString(R.string.action_start), startPending)
+            }
         }
-
-        val stopIntent = Intent(context, VisionTimerService::class.java).apply {
-            action = VisionTimerService.ACTION_STOP
-        }
-        val stopPending = PendingIntent.getService(
-            context, 4, stopIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, context.getString(R.string.action_stop), stopPending)
 
         return builder.build()
     }

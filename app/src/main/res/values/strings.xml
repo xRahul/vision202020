@@ -15,6 +15,7 @@
     <string name="notif_content_snoozed">%s remaining until next reminder</string>
     <string name="notif_title_idle">Vision 20-20-20</string>
     <string name="notif_content_idle">Tap to start protecting your eyes</string>
+    <string name="action_start">Start</string>
     <string name="action_resume">Resume</string>
     <string name="action_pause">Pause</string>
     <string name="action_take_break">Rest Now</string>

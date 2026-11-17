@@ -104,8 +104,8 @@ class VisionTimerService : Service() {
     }
 
     private fun startTimer() {
-        startForegroundServiceWithNotification()
         engine.start()
+        startForegroundServiceWithNotification()
         startTicker()
     }
 
