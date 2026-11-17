@@ -5,6 +5,10 @@ local.properties
 .idea/
 *.iml
 .superpowers/
+docs/superpowers/
 *.hprof
 *.keystore
 *.jks
+*.creds
+__pycache__/
+*.pyc

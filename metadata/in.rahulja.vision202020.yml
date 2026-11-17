@@ -8,20 +8,23 @@ SourceCode: https://github.com/xRahul/vision202020
 IssueTracker: https://github.com/xRahul/vision202020/issues
 
 AutoName: Vision 20-20-20
-Summary: Scientific 20-20-20 eye wellness & digital strain reminder
+Summary: Prevent digital eye strain with the 20-20-20 rule. 100% offline.
 Description: |-
-  Vision 20-20-20 helps prevent Computer Vision Syndrome and digital asthenopia by
-  encouraging you to follow the ophthalmologist-backed 20-20-20 rule: every 20 minutes
-  of screen reading, look at an object 20 feet away for 20 seconds.
+  Extended screen reading reduces natural blink rates by over 60%, breaking the tear film
+  and causing ciliary muscle accommodation spasms (Digital Eye Strain).
+
+  Vision 20-20-20 helps you adhere to the ophthalmologist-backed 20-20-20 rule:
+  Every 20 minutes of screen work, look at an object 20 feet away for 20 seconds.
 
   Features:
-  - Zero screen clutter or floating bubbles during the 20-minute working session
-  - 20-second guided breathing & eye relaxation overlay with auto-dismiss
-  - Mobile reading profile (pauses when screen is off, natural break auto-reset)
-  - Laptop / desk companion profile (continuous wall-clock countdown)
+  - Zero overlay clutter over your active apps during the 20-minute work session
+  - 20-second calming guided breathing and eye rest overlay with auto-dismiss
+  - Screen-aware mobile profile (pauses when phone is locked, natural break auto-reset)
+  - Desk companion profile (continuous wall-clock countdown for laptop reading)
   - Lock-screen Google Clock-style alert delivery (setShowWhenLocked)
   - Quick Settings Tile and Jetpack Glance Home Screen Widget
-  - 100% offline, zero internet permissions, privacy-first
+  - 100% offline: android.permission.INTERNET is completely absent from the manifest
+  - Free & Open Source Software under GNU General Public License v3.0
 
 RepoType: git
 Repo: https://github.com/xRahul/vision202020.git

@@ -22,7 +22,7 @@ permissions:
 jobs:
   build-and-release:
     name: Build & Publish Release APKs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Code
@@ -62,26 +62,7 @@ jobs:
             VERSION_CODE=$((GIT_COUNT + 1))
 
             if [ -f "metadata/in.rahulja.vision202020.yml" ]; then
-              python3 - <<EOF
-import re
-with open('metadata/in.rahulja.vision202020.yml', 'r') as f:
-    content = f.read()
-
-content = re.sub(r'CurrentVersion:\s*.+', f'CurrentVersion: $VERSION', content)
-content = re.sub(r'CurrentVersionCode:\s*.+', f'CurrentVersionCode: $VERSION_CODE', content)
-
-new_build = f'''Builds:
-  - versionName: $VERSION
-    versionCode: $VERSION_CODE
-    commit: $NEW_TAG
-    subdir: app
-    gradle:
-      - yes'''
-content = re.sub(r'Builds:\s*\n\s*-\s*versionName:[\s\S]*?gradle:\s*\n\s*-\s*yes', new_build, content)
-
-with open('metadata/in.rahulja.vision202020.yml', 'w') as f:
-    f.write(content)
-EOF
+              python3 scripts/update_fdroid_metadata.py "$VERSION" "$VERSION_CODE" "$NEW_TAG"
             fi
 
             git config user.name "github-actions[bot]"
@@ -100,13 +81,15 @@ EOF
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
 
       - name: Make Gradlew Executable
         run: chmod +x gradlew

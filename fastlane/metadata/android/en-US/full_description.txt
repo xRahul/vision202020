@@ -1,12 +1,29 @@
-Vision 20-20-20 is an open-source, offline, privacy-first Android eye wellness companion that helps you adhere to the ophthalmologist-recommended 20-20-20 rule: Every 20 minutes of screen time, look at an object 20 feet away for at least 20 seconds.
+Extended screen reading reduces your natural blink rate from ~18 blinks/minute down to ~5 blinks/minute. This causes dry spots on the cornea and forces the ciliary eye muscles into sustained accommodation spasms (Digital Eye Strain / Computer Vision Syndrome).
 
-Extended screen reading reduces human blink rates by more than 60%, causing tear film breakdown and chronic ciliary muscle spasms (Computer Vision Syndrome). Vision 20-20-20 enforces regular rest intervals to keep your eyes lubricated and comfortable.
+Vision 20-20-20 is a free, open-source, offline Android companion that helps you practice the ophthalmologist-backed 20-20-20 Rule:
+Every 20 minutes of screen work, gaze at an object 20 feet (6 meters) away for 20 seconds.
 
-Key Features:
-- Zero Screen Clutter: Unlike intrusive floating widgets, nothing is drawn on top of your screen during the 20-minute working session.
-- 20-Second Guided Relaxation: A soothing dark breathing ring guides you to relax your eyes for 20 seconds, then dismisses itself automatically.
-- Mobile Reading Mode: Automatically tracks screen-on time and pauses when your screen is locked. A screen-off period of 5+ minutes is recognized as a natural break, resetting the timer.
-- Laptop / Desk Companion: Runs continuous wall-clock intervals while sitting beside your computer.
-- Lock-Screen Rest Alerts: Wakes sleeping displays with relaxation guidance Google Clock style.
-- Quick Settings Tile & Home Widget: Single-tap toggle directly from your notification shade or home screen.
-- 100% Offline & Private: No internet permission, no telemetry, no tracking. Free software under GPL-3.0.
+WHY VISION 20-20-20 IS DIFFERENT
+
+• Zero Work Clutter: Unlike intrusive floating widgets or floating bubbles, nothing floats over your apps, documents, or games while you work.
+• 20-Second Guided Relaxation: When rest time arrives, a calming dark breathing ring guides your eyes to relax, then automatically dismisses itself.
+• Screen-Aware Mobile Profile: The timer ticks ONLY while your screen is unlocked. When your screen turns off, the countdown pauses with zero CPU/battery drain.
+• Natural Break Auto-Reset: If you put your phone away for 5 or more minutes, the app recognizes you took a natural break and resets the 20-minute cycle automatically.
+• Desk & Laptop Companion Profile: Switch to continuous wall-clock mode to place your phone beside your monitor while you work.
+• Battery-Efficient Themes: Includes pure OLED Black (turns off pixels on OLED screens), Dark Slate, and Light themes.
+• Quick Settings Tile & Glance Widget: Single-tap toggle directly from your notification shade or home screen.
+
+100% PRIVATE & OFFLINE
+
+• Zero Internet Permissions: The "android.permission.INTERNET" permission is completely absent from the APK manifest. The app cannot connect to the internet even if it wanted to.
+• No analytics, no telemetry, no tracking, no ads, no user accounts.
+• Licensed under GNU General Public License v3.0 (GPL-3.0-or-later).
+
+TRANSPARENT PERMISSIONS BREAKDOWN
+
+• POST_NOTIFICATIONS: To display the ongoing countdown ticker and notify you when rest time begins.
+• FOREGROUND_SERVICE & FOREGROUND_SERVICE_SPECIAL_USE: Keeps timer tracking accurate without being killed by Android's background app optimizers.
+• SYSTEM_ALERT_WINDOW: (Optional) To display the 20-second calming rest overlay over active apps.
+• USE_FULL_SCREEN_INTENT & SCHEDULE_EXACT_ALARM: Wakes the display for eye rest Google Clock-alarm style even if your device is locked.
+• RECEIVE_BOOT_COMPLETED: Automatically resumes your eye rest timer after your phone reboots.
+• VIBRATE: Plays a subtle tactile cue when rest begins and ends.
