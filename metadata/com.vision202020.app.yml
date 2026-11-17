@@ -2,9 +2,9 @@ Categories:
   - Health & Fitness
   - Time
 License: GPL-3.0-or-later
-AuthorName: Antigravity
-SourceCode: https://github.com/rahul/vision202020
-IssueTracker: https://github.com/rahul/vision202020/issues
+AuthorName: Rahul
+SourceCode: https://github.com/xRahul/vision202020
+IssueTracker: https://github.com/xRahul/vision202020/issues
 
 AutoName: Vision 20-20-20
 Summary: Scientific 20-20-20 eye wellness & digital strain reminder
@@ -23,17 +23,17 @@ Description: |-
   - 100% offline, zero internet permissions, privacy-first
 
 RepoType: git
-Repo: https://github.com/rahul/vision202020.git
+Repo: https://github.com/xRahul/vision202020.git
 
 Builds:
-  - versionName: 1.0.0
-    versionCode: 12
-    commit: v1.0.0
+  - versionName: 1.0.1
+    versionCode: 15
+    commit: v1.0.1
     subdir: app
     gradle:
       - yes
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.0
-CurrentVersionCode: 12
+CurrentVersion: 1.0.1
+CurrentVersionCode: 15

@@ -31,7 +31,7 @@ Extended screen time on phones and laptops drastically decreases natural blinkin
 ## Downloads & Installation
 
 - **F-Droid:** Available on F-Droid via `com.vision202020.app`.
-- **GitHub Releases:** Download pre-built release APKs from [Releases](https://github.com).
+- **GitHub Releases:** Download pre-built release APKs from [Releases](https://github.com/xRahul/vision202020/releases).
 
 ---
 
@@ -43,7 +43,7 @@ Extended screen time on phones and laptops drastically decreases natural blinkin
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/vision202020.git
+git clone git@github.com:xRahul/vision202020.git
 cd vision202020
 
 # Run unit tests

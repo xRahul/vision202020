@@ -6,6 +6,10 @@ plugins {
 }
 
 fun getGitVersionCode(): Int {
+    val propCode = (project.findProperty("versionCode") as? String)?.toIntOrNull()
+        ?: System.getenv("VERSION_CODE")?.toIntOrNull()
+    if (propCode != null) return propCode
+
     return try {
         val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
@@ -20,6 +24,10 @@ fun getGitVersionCode(): Int {
 }
 
 fun getGitVersionName(): String {
+    val propName = (project.findProperty("versionName") as? String)
+        ?: System.getenv("VERSION_NAME")
+    if (!propName.isNullOrBlank()) return propName
+
     return try {
         val process = ProcessBuilder("git", "describe", "--tags", "--always")
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
@@ -106,17 +114,6 @@ android {
         unitTests {
             isReturnDefaultValues = true
             isIncludeAndroidResources = true
-        }
-    }
-}
-
-// Rename output APKs cleanly: vision202020-v<version>-<buildType>.apk
-androidComponents {
-    onVariants { variant ->
-        variant.outputs.forEach { output ->
-            if (output is com.android.build.api.variant.VariantOutput) {
-                // Standard naming
-            }
         }
     }
 }
