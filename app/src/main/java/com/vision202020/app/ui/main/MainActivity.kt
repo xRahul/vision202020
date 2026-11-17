@@ -52,7 +52,6 @@ class MainActivity : ComponentActivity() {
                     onWorkDurationChanged = { viewModel.setWorkDuration(it) },
                     onRestDurationChanged = { viewModel.setRestDuration(it) },
                     onNaturalBreakChanged = { viewModel.setNaturalBreakMinutes(it) },
-                    onTimerProfileChanged = { viewModel.setTimerProfile(it) },
                     onEnforcementModeChanged = { viewModel.setEnforcementMode(it) },
                     onStrictModeChanged = { viewModel.setStrictMode(it) },
                     onSoundChanged = { viewModel.setSoundEnabled(it) },

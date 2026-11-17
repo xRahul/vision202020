@@ -1,9 +1,9 @@
 package com.vision202020.app.domain
 
 import com.vision202020.app.data.EnforcementMode
-import com.vision202020.app.data.TimerProfile
 import com.vision202020.app.data.UserPreferences
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -29,7 +29,6 @@ class VisionTimerEngineTest {
             workDurationMinutes = 20,
             restDurationSeconds = 20,
             naturalBreakMinutes = 5,
-            timerProfile = TimerProfile.MOBILE_SCREEN_AWARE,
             enforcementMode = EnforcementMode.BLOCKER_OVERLAY
         )
     }
@@ -38,6 +37,7 @@ class VisionTimerEngineTest {
     fun testInitialStateIsIdle() {
         val engine = VisionTimerEngine(defaultPrefs, timeProvider = { fakeTime.currentMillis })
         assertEquals(TimerStatus.Idle, engine.state.value)
+        assertFalse(engine.isSessionActive)
     }
 
     @Test
@@ -50,6 +50,7 @@ class VisionTimerEngineTest {
         assertEquals(1200, state.remainingSeconds)
         assertEquals(0, state.elapsedSeconds)
         assertEquals(false, state.isScreenPaused)
+        assertTrue(engine.isSessionActive)
     }
 
     @Test
@@ -71,7 +72,28 @@ class VisionTimerEngineTest {
     }
 
     @Test
-    fun testNaturalBreakResetAfterThresholdInMobileMode() {
+    fun testBreakCompletionAutoStartsNextWorkingSessionAndFiresCallback() {
+        val shortPrefs = defaultPrefs.copy(workDurationMinutes = 20, restDurationSeconds = 20)
+        val engine = VisionTimerEngine(shortPrefs, timeProvider = { fakeTime.currentMillis })
+        var callbackFired = false
+        engine.onBreakCompleted = { callbackFired = true }
+
+        engine.start()
+        engine.triggerBreak()
+
+        engine.completeBreak()
+
+        assertTrue("Break completed callback should have fired", callbackFired)
+        val state = engine.state.value
+        assertTrue("Expected next Working cycle, got $state", state is TimerStatus.Working)
+        state as TimerStatus.Working
+        assertEquals(1200, state.remainingSeconds)
+        assertEquals(0, state.elapsedSeconds)
+        assertFalse(state.isScreenPaused)
+    }
+
+    @Test
+    fun testNaturalBreakResetAfterThreshold() {
         val engine = VisionTimerEngine(defaultPrefs, timeProvider = { fakeTime.currentMillis })
         engine.start()
 
@@ -89,12 +111,13 @@ class VisionTimerEngineTest {
         // Screen stays off for 6 minutes (exceeds 5m natural break threshold)
         fakeTime.advanceMinutes(6)
 
-        // Screen turned on
+        // Screen turned on -> resets accumulator and auto-starts fresh countdown!
         engine.onScreenOn()
         val resumedState = engine.state.value as TimerStatus.Working
         assertEquals(false, resumedState.isScreenPaused)
         assertEquals(0, resumedState.elapsedSeconds)
         assertEquals(1200, resumedState.remainingSeconds)
+        assertTrue(engine.isSessionActive)
     }
 
     @Test
@@ -120,22 +143,6 @@ class VisionTimerEngineTest {
     }
 
     @Test
-    fun testLaptopModeIgnoresScreenOff() {
-        val laptopPrefs = defaultPrefs.copy(timerProfile = TimerProfile.LAPTOP_DESK)
-        val engine = VisionTimerEngine(laptopPrefs, timeProvider = { fakeTime.currentMillis })
-        engine.start()
-
-        engine.onScreenOff()
-        val state = engine.state.value as TimerStatus.Working
-        assertEquals(false, state.isScreenPaused) // still not paused!
-
-        fakeTime.advanceSeconds(1)
-        engine.tickSecond()
-        val tickedState = engine.state.value as TimerStatus.Working
-        assertEquals(1, tickedState.elapsedSeconds)
-    }
-
-    @Test
     fun testScreenOffDuringRestBreakAdvancesCountdown() {
         val shortPrefs = defaultPrefs.copy(workDurationMinutes = 1, restDurationSeconds = 20)
         val engine = VisionTimerEngine(shortPrefs, timeProvider = { fakeTime.currentMillis })
@@ -157,8 +164,18 @@ class VisionTimerEngineTest {
         // Break finishes and next cycle begins automatically
         val nextState = engine.state.value
         assertTrue("Expected new Working cycle, got $nextState", nextState is TimerStatus.Working)
-        // Verified Critical 2: since screen was off when break finished, next cycle MUST be paused!
         assertTrue("Next cycle should remain paused while screen is off", (nextState as TimerStatus.Working).isScreenPaused)
+    }
+
+    @Test
+    fun testManualStopCancelsSession() {
+        val engine = VisionTimerEngine(defaultPrefs, timeProvider = { fakeTime.currentMillis })
+        engine.start()
+        assertTrue(engine.isSessionActive)
+
+        engine.stop()
+        assertFalse(engine.isSessionActive)
+        assertEquals(TimerStatus.Idle, engine.state.value)
     }
 
     @Test

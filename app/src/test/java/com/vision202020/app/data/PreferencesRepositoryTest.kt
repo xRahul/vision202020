@@ -1,21 +1,26 @@
 package com.vision202020.app.data
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PreferencesRepositoryTest {
@@ -23,18 +28,26 @@ class PreferencesRepositoryTest {
     @get:Rule
     val tmpFolder: TemporaryFolder = TemporaryFolder()
 
-    private val testDispatcher = UnconfinedTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher + Job())
+
     private lateinit var dataStore: DataStore<Preferences>
     private lateinit var repository: PreferencesRepository
 
     @Before
     fun setup() {
+        Dispatchers.setMain(testDispatcher)
         dataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
-            produceFile = { File(tmpFolder.root, "test_preferences.preferences_pb") }
+            produceFile = { tmpFolder.newFile("test_preferences.preferences_pb") }
         )
         repository = PreferencesRepositoryImpl(dataStore)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        testScope.cancel()
     }
 
     @Test
@@ -43,7 +56,6 @@ class PreferencesRepositoryTest {
         assertEquals(20, prefs.workDurationMinutes)
         assertEquals(20, prefs.restDurationSeconds)
         assertEquals(5, prefs.naturalBreakMinutes)
-        assertEquals(TimerProfile.MOBILE_SCREEN_AWARE, prefs.timerProfile)
         assertEquals(EnforcementMode.BLOCKER_OVERLAY, prefs.enforcementMode)
         assertEquals(false, prefs.strictMode)
         assertEquals(true, prefs.soundEnabled)
@@ -55,7 +67,6 @@ class PreferencesRepositoryTest {
         repository.updateWorkDuration(25)
         repository.updateRestDuration(30)
         repository.updateNaturalBreakMinutes(10)
-        repository.updateTimerProfile(TimerProfile.LAPTOP_DESK)
         repository.updateEnforcementMode(EnforcementMode.NOTIFICATION_ONLY)
         repository.updateStrictMode(true)
 
@@ -63,7 +74,6 @@ class PreferencesRepositoryTest {
         assertEquals(25, updated.workDurationMinutes)
         assertEquals(30, updated.restDurationSeconds)
         assertEquals(10, updated.naturalBreakMinutes)
-        assertEquals(TimerProfile.LAPTOP_DESK, updated.timerProfile)
         assertEquals(EnforcementMode.NOTIFICATION_ONLY, updated.enforcementMode)
         assertTrue(updated.strictMode)
     }

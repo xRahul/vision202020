@@ -21,7 +21,6 @@ interface PreferencesRepository {
     suspend fun updateWorkDuration(minutes: Int)
     suspend fun updateRestDuration(seconds: Int)
     suspend fun updateNaturalBreakMinutes(minutes: Int)
-    suspend fun updateTimerProfile(profile: TimerProfile)
     suspend fun updateEnforcementMode(mode: EnforcementMode)
     suspend fun updateStrictMode(enabled: Boolean)
     suspend fun updateSoundEnabled(enabled: Boolean)
@@ -36,7 +35,6 @@ class PreferencesRepositoryImpl(
         val WORK_DURATION_MINUTES = intPreferencesKey("work_duration_minutes")
         val REST_DURATION_SECONDS = intPreferencesKey("rest_duration_seconds")
         val NATURAL_BREAK_MINUTES = intPreferencesKey("natural_break_minutes")
-        val TIMER_PROFILE = stringPreferencesKey("timer_profile")
         val ENFORCEMENT_MODE = stringPreferencesKey("enforcement_mode")
         val STRICT_MODE = booleanPreferencesKey("strict_mode")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
@@ -55,17 +53,10 @@ class PreferencesRepositoryImpl(
             val workMin = preferences[PreferencesKeys.WORK_DURATION_MINUTES] ?: 20
             val restSec = preferences[PreferencesKeys.REST_DURATION_SECONDS] ?: 20
             val naturalBreakMin = preferences[PreferencesKeys.NATURAL_BREAK_MINUTES] ?: 5
-            val profileStr = preferences[PreferencesKeys.TIMER_PROFILE] ?: TimerProfile.MOBILE_SCREEN_AWARE.name
             val modeStr = preferences[PreferencesKeys.ENFORCEMENT_MODE] ?: EnforcementMode.BLOCKER_OVERLAY.name
             val strict = preferences[PreferencesKeys.STRICT_MODE] ?: false
             val sound = preferences[PreferencesKeys.SOUND_ENABLED] ?: true
             val vibe = preferences[PreferencesKeys.VIBRATION_ENABLED] ?: true
-
-            val profile = try {
-                TimerProfile.valueOf(profileStr)
-            } catch (e: IllegalArgumentException) {
-                TimerProfile.MOBILE_SCREEN_AWARE
-            }
 
             val mode = try {
                 EnforcementMode.valueOf(modeStr)
@@ -77,7 +68,6 @@ class PreferencesRepositoryImpl(
                 workDurationMinutes = workMin,
                 restDurationSeconds = restSec,
                 naturalBreakMinutes = naturalBreakMin,
-                timerProfile = profile,
                 enforcementMode = mode,
                 strictMode = strict,
                 soundEnabled = sound,
@@ -100,12 +90,6 @@ class PreferencesRepositoryImpl(
     override suspend fun updateNaturalBreakMinutes(minutes: Int) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.NATURAL_BREAK_MINUTES] = minutes
-        }
-    }
-
-    override suspend fun updateTimerProfile(profile: TimerProfile) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKeys.TIMER_PROFILE] = profile.name
         }
     }
 

@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.vision202020.app.data.TimerProfile
 import com.vision202020.app.data.UserPreferences
 import com.vision202020.app.domain.TimerStatus
 import com.vision202020.app.service.NotificationHelper
@@ -107,11 +106,7 @@ fun MainScreen(
                     .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = if (preferences.timerProfile == TimerProfile.MOBILE_SCREEN_AWARE) {
-                        "📱 Mobile Reading (Screen-Aware)"
-                    } else {
-                        "💻 Laptop / Desk Companion"
-                    },
+                    text = "📱 Mobile Screen Guard Active",
                     fontSize = 12.sp,
                     color = Color(0xFF38BDF8),
                     fontWeight = FontWeight.Medium

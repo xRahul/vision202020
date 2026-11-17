@@ -1,6 +1,5 @@
 package com.vision202020.app.domain
 
-import com.vision202020.app.data.TimerProfile
 import com.vision202020.app.data.UserPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,9 +12,15 @@ class VisionTimerEngine(
     private val _state = MutableStateFlow<TimerStatus>(TimerStatus.Idle)
     val state: StateFlow<TimerStatus> = _state.asStateFlow()
 
+    private var _isSessionActive: Boolean = false
+    val isSessionActive: Boolean get() = _isSessionActive
+
+    var onBreakCompleted: (() -> Unit)? = null
+
     private var screenOffTimestampMs: Long = 0L
 
     fun start() {
+        _isSessionActive = true
         val totalSec = prefs.workDurationMinutes * 60
         _state.value = TimerStatus.Working(
             remainingSeconds = totalSec,
@@ -40,11 +45,12 @@ class VisionTimerEngine(
     }
 
     fun stop() {
+        _isSessionActive = false
+        screenOffTimestampMs = 0L
         _state.value = TimerStatus.Idle
     }
 
     fun updatePreferences(newPrefs: UserPreferences) {
-        val oldPrefs = prefs
         prefs = newPrefs
 
         val current = _state.value
@@ -64,38 +70,42 @@ class VisionTimerEngine(
     }
 
     fun onScreenOff() {
-        if (prefs.timerProfile == TimerProfile.MOBILE_SCREEN_AWARE) {
-            screenOffTimestampMs = timeProvider()
-            val current = _state.value
-            if (current is TimerStatus.Working) {
-                _state.value = current.copy(isScreenPaused = true)
-            }
+        screenOffTimestampMs = timeProvider()
+        val current = _state.value
+        if (current is TimerStatus.Working) {
+            _state.value = current.copy(isScreenPaused = true)
         }
     }
 
     fun onScreenOn() {
-        if (prefs.timerProfile == TimerProfile.MOBILE_SCREEN_AWARE) {
-            val now = timeProvider()
-            val offDurationMs = now - screenOffTimestampMs
-            val naturalBreakThresholdMs = prefs.naturalBreakMinutes * 60 * 1000L
+        val now = timeProvider()
+        val offDurationMs = if (screenOffTimestampMs > 0L) now - screenOffTimestampMs else 0L
+        val naturalBreakThresholdMs = prefs.naturalBreakMinutes * 60 * 1000L
 
-            val current = _state.value
-            if (current is TimerStatus.Working) {
-                if (screenOffTimestampMs > 0 && offDurationMs >= naturalBreakThresholdMs) {
-                    // Natural break took place! Reset accumulator to 0
-                    val totalSec = prefs.workDurationMinutes * 60
-                    _state.value = TimerStatus.Working(
-                        remainingSeconds = totalSec,
-                        elapsedSeconds = 0,
-                        totalSeconds = totalSec,
-                        isScreenPaused = false
-                    )
-                } else {
-                    _state.value = current.copy(isScreenPaused = false)
-                }
+        val current = _state.value
+        if (_isSessionActive) {
+            if (screenOffTimestampMs > 0L && offDurationMs >= naturalBreakThresholdMs) {
+                // Natural break (>= naturalBreakMinutes screen off): reset accumulator and auto-start fresh countdown
+                val totalSec = prefs.workDurationMinutes * 60
+                _state.value = TimerStatus.Working(
+                    remainingSeconds = totalSec,
+                    elapsedSeconds = 0,
+                    totalSeconds = totalSec,
+                    isScreenPaused = false
+                )
+            } else if (current is TimerStatus.Working) {
+                _state.value = current.copy(isScreenPaused = false)
+            } else if (current is TimerStatus.Idle) {
+                val totalSec = prefs.workDurationMinutes * 60
+                _state.value = TimerStatus.Working(
+                    remainingSeconds = totalSec,
+                    elapsedSeconds = 0,
+                    totalSeconds = totalSec,
+                    isScreenPaused = false
+                )
             }
-            screenOffTimestampMs = 0L
         }
+        screenOffTimestampMs = 0L
     }
 
     fun snooze(durationSeconds: Int = 300) {
@@ -107,13 +117,14 @@ class VisionTimerEngine(
 
     fun completeBreak() {
         val totalSec = prefs.workDurationMinutes * 60
-        val isScreenCurrentlyOff = screenOffTimestampMs > 0L && prefs.timerProfile == TimerProfile.MOBILE_SCREEN_AWARE
+        val isScreenCurrentlyOff = screenOffTimestampMs > 0L
         _state.value = TimerStatus.Working(
             remainingSeconds = totalSec,
             elapsedSeconds = 0,
             totalSeconds = totalSec,
             isScreenPaused = isScreenCurrentlyOff
         )
+        onBreakCompleted?.invoke()
     }
 
     fun triggerBreak() {

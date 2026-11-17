@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vision202020.app.data.EnforcementMode
 import com.vision202020.app.data.PreferencesRepository
-import com.vision202020.app.data.TimerProfile
 import com.vision202020.app.data.UserPreferences
 import com.vision202020.app.domain.TimerStatus
 import com.vision202020.app.service.VisionTimerService
@@ -41,12 +40,6 @@ class MainViewModel(
     fun setNaturalBreakMinutes(minutes: Int) {
         viewModelScope.launch {
             repository.updateNaturalBreakMinutes(minutes)
-        }
-    }
-
-    fun setTimerProfile(profile: TimerProfile) {
-        viewModelScope.launch {
-            repository.updateTimerProfile(profile)
         }
     }
 

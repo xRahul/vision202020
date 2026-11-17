@@ -10,7 +10,6 @@ import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import com.vision202020.app.data.EnforcementMode
 import com.vision202020.app.data.PreferencesRepositoryImpl
-import com.vision202020.app.data.TimerProfile
 import com.vision202020.app.data.UserPreferences
 import com.vision202020.app.data.dataStore
 import com.vision202020.app.domain.TimerStatus
@@ -37,42 +36,49 @@ class VisionTimerService : Service() {
 
     private lateinit var notificationHelper: NotificationHelper
     private lateinit var overlayManager: OverlayManager
+    private lateinit var soundAlertHelper: SoundAlertHelper
     private lateinit var engine: VisionTimerEngine
     private lateinit var screenReceiver: ScreenStateReceiver
 
     private var currentPrefs = UserPreferences()
+    private var previousStatus: TimerStatus? = null
 
     override fun onCreate() {
         super.onCreate()
         notificationHelper = NotificationHelper(this)
         notificationHelper.createChannels()
         overlayManager = OverlayManager(this)
+        soundAlertHelper = SoundAlertHelper(this)
 
         val repo = PreferencesRepositoryImpl(applicationContext.dataStore)
         engine = VisionTimerEngine(currentPrefs)
+        engine.onBreakCompleted = {
+            soundAlertHelper.playBreakEnded(currentPrefs.soundEnabled, currentPrefs.vibrationEnabled)
+        }
 
         screenReceiver = ScreenStateReceiver(
             onScreenOn = {
                 engine.onScreenOn()
+                if (engine.isSessionActive) {
+                    startTicker()
+                }
                 if (engine.state.value is TimerStatus.RestBreak) {
                     handleStateChange(engine.state.value)
                 }
             },
             onScreenOff = {
+                tickerJob?.cancel()
+                tickerJob = null
                 engine.onScreenOff()
                 overlayManager.dismissOverlay()
             }
         )
+        screenReceiver.register(this)
 
         serviceScope.launch {
             repo.preferencesFlow.collect { prefs ->
                 currentPrefs = prefs
                 engine.updatePreferences(prefs)
-                if (prefs.timerProfile == TimerProfile.MOBILE_SCREEN_AWARE) {
-                    screenReceiver.register(this@VisionTimerService)
-                } else {
-                    screenReceiver.unregister(this@VisionTimerService)
-                }
             }
         }
 
@@ -105,6 +111,7 @@ class VisionTimerService : Service() {
 
     private fun stopTimer() {
         tickerJob?.cancel()
+        tickerJob = null
         engine.stop()
         overlayManager.dismissOverlay()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -142,6 +149,10 @@ class VisionTimerService : Service() {
 
         when (status) {
             is TimerStatus.RestBreak -> {
+                if (previousStatus !is TimerStatus.RestBreak) {
+                    soundAlertHelper.playBreakStarted(currentPrefs.soundEnabled, currentPrefs.vibrationEnabled)
+                }
+
                 if (currentPrefs.enforcementMode == EnforcementMode.BLOCKER_OVERLAY && overlayManager.canDrawOverlays()) {
                     overlayManager.showBreakOverlay(
                         remainingSeconds = status.remainingSeconds,
@@ -158,6 +169,9 @@ class VisionTimerService : Service() {
             is TimerStatus.Working -> {
                 overlayManager.dismissOverlay()
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
+                if (!status.isScreenPaused && tickerJob?.isActive != true) {
+                    startTicker()
+                }
             }
             is TimerStatus.Snoozed -> {
                 overlayManager.dismissOverlay()
@@ -168,6 +182,8 @@ class VisionTimerService : Service() {
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
             }
         }
+
+        previousStatus = status
 
         serviceScope.launch {
             try {
@@ -181,6 +197,7 @@ class VisionTimerService : Service() {
     override fun onDestroy() {
         screenReceiver.unregister(this)
         overlayManager.dismissOverlay()
+        soundAlertHelper.release()
         serviceScope.cancel()
         _timerStatus.value = TimerStatus.Idle
         super.onDestroy()

@@ -1,6 +1,5 @@
 package com.vision202020.app.ui.settings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,7 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vision202020.app.data.EnforcementMode
-import com.vision202020.app.data.TimerProfile
 import com.vision202020.app.data.UserPreferences
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,7 +43,6 @@ fun SettingsScreen(
     onWorkDurationChanged: (Int) -> Unit,
     onRestDurationChanged: (Int) -> Unit,
     onNaturalBreakChanged: (Int) -> Unit,
-    onTimerProfileChanged: (TimerProfile) -> Unit,
     onEnforcementModeChanged: (EnforcementMode) -> Unit,
     onStrictModeChanged: (Boolean) -> Unit,
     onSoundChanged: (Boolean) -> Unit,
@@ -76,37 +73,17 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Section 1: Timer Profile
-            SettingsCard(title = "Timer Profile") {
+            // Mobile Screen-Aware Info Card
+            SettingsCard(title = "📱 Mobile Screen-Aware Protection") {
                 Text(
-                    text = "Mobile mode pauses when screen is off. Laptop mode keeps ticking on your desk.",
+                    text = "Vision 20-20-20 is dedicated to mobile eye protection. It counts active screen time while unlocked, sleeps with zero battery impact while locked, and auto-resets when you take a natural break.",
                     fontSize = 13.sp,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFF94A3B8),
+                    lineHeight = 18.sp
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = preferences.timerProfile == TimerProfile.MOBILE_SCREEN_AWARE,
-                        onClick = { onTimerProfileChanged(TimerProfile.MOBILE_SCREEN_AWARE) },
-                        label = { Text("Mobile (Screen-Aware)") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF38BDF8),
-                            selectedLabelColor = Color(0xFF0F172A)
-                        )
-                    )
-                    FilterChip(
-                        selected = preferences.timerProfile == TimerProfile.LAPTOP_DESK,
-                        onClick = { onTimerProfileChanged(TimerProfile.LAPTOP_DESK) },
-                        label = { Text("Laptop / Desk") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF38BDF8),
-                            selectedLabelColor = Color(0xFF0F172A)
-                        )
-                    )
-                }
             }
 
-            // Section 2: Intervals
+            // Section 1: Intervals
             SettingsCard(title = "Work & Rest Durations") {
                 Text("Work Duration (Standard 20m):", fontSize = 13.sp, color = Color(0xFFCBD5E1))
                 Spacer(modifier = Modifier.height(8.dp))
@@ -134,6 +111,25 @@ fun SettingsScreen(
                             selected = preferences.restDurationSeconds == secs,
                             onClick = { onRestDurationChanged(secs) },
                             label = { Text("${secs}s") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF38BDF8),
+                                selectedLabelColor = Color(0xFF0F172A)
+                            )
+                        )
+                    }
+                }
+            }
+
+            // Section 2: Natural Break
+            SettingsCard(title = "Natural Break Reset Threshold") {
+                Text("Locking your phone for this long resets the 20m work timer:", fontSize = 13.sp, color = Color(0xFFCBD5E1))
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(2, 5, 10, 15).forEach { mins ->
+                        FilterChip(
+                            selected = preferences.naturalBreakMinutes == mins,
+                            onClick = { onNaturalBreakChanged(mins) },
+                            label = { Text("${mins}m") },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color(0xFF38BDF8),
                                 selectedLabelColor = Color(0xFF0F172A)
