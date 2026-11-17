@@ -1,4 +1,26 @@
 <resources>
     <string name="app_name">Vision 20-20-20</string>
     <string name="tile_name">Vision 20-20-20</string>
+    <string name="channel_timer_name">Active Vision Session</string>
+    <string name="channel_timer_desc">Displays the ongoing 20-minute countdown.</string>
+    <string name="channel_break_name">20-20-20 Eye Rest Alerts</string>
+    <string name="channel_break_desc">Alerts when it is time to take a 20-second eye rest break.</string>
+    <string name="notif_title_working">Vision 20-20-20 Active</string>
+    <string name="notif_content_working">%s remaining before eye rest</string>
+    <string name="notif_title_paused">Vision Session Paused</string>
+    <string name="notif_content_paused">%s remaining (Screen Off)</string>
+    <string name="notif_title_break">Eye Rest Time!</string>
+    <string name="notif_content_break">Look 20 feet away: %s</string>
+    <string name="notif_title_snoozed">Break Snoozed</string>
+    <string name="notif_content_snoozed">%s remaining until next reminder</string>
+    <string name="notif_title_idle">Vision 20-20-20</string>
+    <string name="notif_content_idle">Tap to start protecting your eyes</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_take_break">Rest Now</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_snooze">Snooze +5m</string>
+    <string name="action_looked_away">I Looked Away</string>
+    <string name="break_alert_title">Time for 20-20-20 Eye Rest!</string>
+    <string name="break_alert_content">Gaze at an object 20 feet away for 20 seconds.</string>
 </resources>
