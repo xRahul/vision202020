@@ -2,6 +2,7 @@ package com.vision202020.app.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vision202020.app.data.AppThemeMode
 import com.vision202020.app.data.EnforcementMode
 import com.vision202020.app.data.PreferencesRepository
 import com.vision202020.app.data.UserPreferences
@@ -64,6 +65,12 @@ class MainViewModel(
     fun setVibrationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             repository.updateVibrationEnabled(enabled)
+        }
+    }
+
+    fun setAppTheme(theme: AppThemeMode) {
+        viewModelScope.launch {
+            repository.updateAppTheme(theme)
         }
     }
 }

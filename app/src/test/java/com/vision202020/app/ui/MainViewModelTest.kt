@@ -1,5 +1,6 @@
 package com.vision202020.app.ui
 
+import com.vision202020.app.data.AppThemeMode
 import com.vision202020.app.data.EnforcementMode
 import com.vision202020.app.data.PreferencesRepository
 import com.vision202020.app.data.UserPreferences
@@ -60,5 +61,13 @@ class MainViewModelTest {
         viewModel.setEnforcementMode(EnforcementMode.NOTIFICATION_ONLY)
 
         coVerify { mockRepository.updateEnforcementMode(EnforcementMode.NOTIFICATION_ONLY) }
+    }
+
+    @Test
+    fun testUpdateAppThemeDispatchesToRepo() = runTest(testDispatcher) {
+        val viewModel = MainViewModel(mockRepository)
+        viewModel.setAppTheme(AppThemeMode.OLED_BLACK)
+
+        coVerify { mockRepository.updateAppTheme(AppThemeMode.OLED_BLACK) }
     }
 }

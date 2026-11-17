@@ -18,6 +18,7 @@ import com.vision202020.app.data.UserPreferences
 import com.vision202020.app.data.dataStore
 import com.vision202020.app.domain.TimerStatus
 import com.vision202020.app.service.VisionTimerService
+import com.vision202020.app.ui.theme.VisionTheme
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -36,19 +37,21 @@ class BreakActivity : ComponentActivity() {
             val remainingSec = if (status is TimerStatus.RestBreak) (status as TimerStatus.RestBreak).remainingSeconds else 20
             val totalSec = if (status is TimerStatus.RestBreak) (status as TimerStatus.RestBreak).totalSeconds else 20
 
-            BreakScreenContent(
-                remainingSeconds = remainingSec,
-                totalSeconds = totalSec,
-                strictMode = preferences.strictMode,
-                onSkip = {
-                    sendServiceAction(VisionTimerService.ACTION_COMPLETE_BREAK)
-                    finish()
-                },
-                onSnooze = {
-                    sendServiceAction(VisionTimerService.ACTION_SNOOZE)
-                    finish()
-                }
-            )
+            VisionTheme(appTheme = preferences.appTheme) {
+                BreakScreenContent(
+                    remainingSeconds = remainingSec,
+                    totalSeconds = totalSec,
+                    strictMode = preferences.strictMode,
+                    onSkip = {
+                        sendServiceAction(VisionTimerService.ACTION_COMPLETE_BREAK)
+                        finish()
+                    },
+                    onSnooze = {
+                        sendServiceAction(VisionTimerService.ACTION_SNOOZE)
+                        finish()
+                    }
+                )
+            }
         }
 
         lifecycleScope.launch {

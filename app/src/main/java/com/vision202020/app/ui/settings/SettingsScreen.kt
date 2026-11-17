@@ -20,6 +20,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -29,10 +30,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.vision202020.app.data.AppThemeMode
 import com.vision202020.app.data.EnforcementMode
 import com.vision202020.app.data.UserPreferences
 
@@ -47,22 +48,23 @@ fun SettingsScreen(
     onStrictModeChanged: (Boolean) -> Unit,
     onSoundChanged: (Boolean) -> Unit,
     onVibrationChanged: (Boolean) -> Unit,
+    onAppThemeChanged: (AppThemeMode) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Settings", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text(text = "Settings", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F172A))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = Color(0xFF0F172A),
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         Column(
@@ -73,19 +75,58 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Theme Card
+            SettingsCard(title = "App Theme") {
+                Text(
+                    text = "OLED Black turns off pixels completely on OLED screens to maximize battery life.",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = preferences.appTheme == AppThemeMode.OLED_BLACK,
+                        onClick = { onAppThemeChanged(AppThemeMode.OLED_BLACK) },
+                        label = { Text("⚡ OLED Black") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                    FilterChip(
+                        selected = preferences.appTheme == AppThemeMode.DARK,
+                        onClick = { onAppThemeChanged(AppThemeMode.DARK) },
+                        label = { Text("🌙 Dark Slate") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                    FilterChip(
+                        selected = preferences.appTheme == AppThemeMode.LIGHT,
+                        onClick = { onAppThemeChanged(AppThemeMode.LIGHT) },
+                        label = { Text("☀️ Light") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                }
+            }
+
             // Mobile Screen-Aware Info Card
             SettingsCard(title = "📱 Mobile Screen-Aware Protection") {
                 Text(
                     text = "Vision 20-20-20 is dedicated to mobile eye protection. It counts active screen time while unlocked, sleeps with zero battery impact while locked, and auto-resets when you take a natural break.",
                     fontSize = 13.sp,
-                    color = Color(0xFF94A3B8),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
                 )
             }
 
             // Section 1: Intervals
             SettingsCard(title = "Work & Rest Durations") {
-                Text("Work Duration (Standard 20m):", fontSize = 13.sp, color = Color(0xFFCBD5E1))
+                Text("Work Duration (Standard 20m):", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(10, 15, 20, 25, 30).forEach { mins ->
@@ -94,8 +135,8 @@ fun SettingsScreen(
                             onClick = { onWorkDurationChanged(mins) },
                             label = { Text("${mins}m") },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF38BDF8),
-                                selectedLabelColor = Color(0xFF0F172A)
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                             )
                         )
                     }
@@ -103,7 +144,7 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text("Rest Duration (Standard 20s):", fontSize = 13.sp, color = Color(0xFFCBD5E1))
+                Text("Rest Duration (Standard 20s):", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(15, 20, 30, 45, 60).forEach { secs ->
@@ -112,8 +153,8 @@ fun SettingsScreen(
                             onClick = { onRestDurationChanged(secs) },
                             label = { Text("${secs}s") },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF38BDF8),
-                                selectedLabelColor = Color(0xFF0F172A)
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                             )
                         )
                     }
@@ -122,7 +163,7 @@ fun SettingsScreen(
 
             // Section 2: Natural Break
             SettingsCard(title = "Natural Break Reset Threshold") {
-                Text("Locking your phone for this long resets the 20m work timer:", fontSize = 13.sp, color = Color(0xFFCBD5E1))
+                Text("Locking your phone for this long resets the 20m work timer:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(2, 5, 10, 15).forEach { mins ->
@@ -131,8 +172,8 @@ fun SettingsScreen(
                             onClick = { onNaturalBreakChanged(mins) },
                             label = { Text("${mins}m") },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF38BDF8),
-                                selectedLabelColor = Color(0xFF0F172A)
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                             )
                         )
                     }
@@ -147,8 +188,8 @@ fun SettingsScreen(
                         onClick = { onEnforcementModeChanged(EnforcementMode.BLOCKER_OVERLAY) },
                         label = { Text("Full-Screen Blocker (20s)") },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF38BDF8),
-                            selectedLabelColor = Color(0xFF0F172A)
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         )
                     )
                     FilterChip(
@@ -156,8 +197,8 @@ fun SettingsScreen(
                         onClick = { onEnforcementModeChanged(EnforcementMode.NOTIFICATION_ONLY) },
                         label = { Text("Notification Only") },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF38BDF8),
-                            selectedLabelColor = Color(0xFF0F172A)
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         )
                     )
                 }
@@ -196,11 +237,11 @@ private fun SettingsCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(12.dp))
             content()
         }
@@ -218,13 +259,13 @@ private fun ToggleRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, fontSize = 14.sp, color = Color(0xFFCBD5E1))
+        Text(text = label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color(0xFF0F172A),
-                checkedTrackColor = Color(0xFF38BDF8)
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary
             )
         )
     }

@@ -158,6 +158,7 @@ class VisionTimerService : Service() {
                         remainingSeconds = status.remainingSeconds,
                         totalSeconds = currentPrefs.restDurationSeconds,
                         strictMode = currentPrefs.strictMode,
+                        appTheme = currentPrefs.appTheme,
                         onSkip = { engine.completeBreak() },
                         onSnooze = { engine.snooze() }
                     )

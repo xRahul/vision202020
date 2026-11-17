@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -74,12 +75,16 @@ fun BreakScreenContent(
         modifier = modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F172A).copy(alpha = 0.95f),
-                        Color(0xFF020617).copy(alpha = 0.98f)
+                if (MaterialTheme.colorScheme.background == Color.Black) {
+                    SolidColor(Color.Black)
+                } else {
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF0F172A).copy(alpha = 0.95f),
+                            Color(0xFF020617).copy(alpha = 0.98f)
+                        )
                     )
-                )
+                }
             ),
         contentAlignment = Alignment.Center
     ) {

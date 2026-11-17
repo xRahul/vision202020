@@ -17,7 +17,9 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.vision202020.app.data.AppThemeMode
 import com.vision202020.app.ui.breakui.BreakScreenContent
+import com.vision202020.app.ui.theme.VisionTheme
 
 class OverlayManager(private val context: Context) {
 
@@ -43,6 +45,7 @@ class OverlayManager(private val context: Context) {
         remainingSeconds: Int,
         totalSeconds: Int = 20,
         strictMode: Boolean = false,
+        appTheme: AppThemeMode = AppThemeMode.OLED_BLACK,
         onSkip: () -> Unit,
         onSnooze: () -> Unit
     ) {
@@ -81,19 +84,21 @@ class OverlayManager(private val context: Context) {
             setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(lifecycleOwner)
             setContent {
-                BreakScreenContent(
-                    remainingSeconds = remainingSecondsState.intValue,
-                    totalSeconds = totalSeconds,
-                    strictMode = strictMode,
-                    onSkip = {
-                        dismissOverlay()
-                        onSkip()
-                    },
-                    onSnooze = {
-                        dismissOverlay()
-                        onSnooze()
-                    }
-                )
+                VisionTheme(appTheme = appTheme) {
+                    BreakScreenContent(
+                        remainingSeconds = remainingSecondsState.intValue,
+                        totalSeconds = totalSeconds,
+                        strictMode = strictMode,
+                        onSkip = {
+                            dismissOverlay()
+                            onSkip()
+                        },
+                        onSnooze = {
+                            dismissOverlay()
+                            onSnooze()
+                        }
+                    )
+                }
             }
         }
 

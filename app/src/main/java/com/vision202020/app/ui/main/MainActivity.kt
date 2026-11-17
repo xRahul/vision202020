@@ -19,6 +19,7 @@ import com.vision202020.app.data.PreferencesRepositoryImpl
 import com.vision202020.app.data.dataStore
 import com.vision202020.app.service.VisionTimerService
 import com.vision202020.app.ui.settings.SettingsScreen
+import com.vision202020.app.ui.theme.VisionTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -46,39 +47,42 @@ class MainActivity : ComponentActivity() {
                 hasNotificationPermission = isGranted
             }
 
-            if (isSettingsOpen) {
-                SettingsScreen(
-                    preferences = preferences,
-                    onWorkDurationChanged = { viewModel.setWorkDuration(it) },
-                    onRestDurationChanged = { viewModel.setRestDuration(it) },
-                    onNaturalBreakChanged = { viewModel.setNaturalBreakMinutes(it) },
-                    onEnforcementModeChanged = { viewModel.setEnforcementMode(it) },
-                    onStrictModeChanged = { viewModel.setStrictMode(it) },
-                    onSoundChanged = { viewModel.setSoundEnabled(it) },
-                    onVibrationChanged = { viewModel.setVibrationEnabled(it) },
-                    onBack = { isSettingsOpen = false }
-                )
-            } else {
-                MainScreen(
-                    status = status,
-                    preferences = preferences,
-                    hasOverlayPermission = hasOverlayPermission,
-                    hasNotificationPermission = hasNotificationPermission,
-                    onStart = { VisionTimerService.start(this) },
-                    onPause = { sendServiceAction(VisionTimerService.ACTION_PAUSE) },
-                    onResume = { sendServiceAction(VisionTimerService.ACTION_RESUME) },
-                    onStop = { VisionTimerService.stop(this) },
-                    onTriggerBreak = { sendServiceAction(VisionTimerService.ACTION_TRIGGER_BREAK) },
-                    onOpenSettings = { isSettingsOpen = true },
-                    onRequestOverlayPermission = {
-                        refreshPermissionStates()
-                    },
-                    onRequestNotificationPermission = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            VisionTheme(appTheme = preferences.appTheme) {
+                if (isSettingsOpen) {
+                    SettingsScreen(
+                        preferences = preferences,
+                        onWorkDurationChanged = { viewModel.setWorkDuration(it) },
+                        onRestDurationChanged = { viewModel.setRestDuration(it) },
+                        onNaturalBreakChanged = { viewModel.setNaturalBreakMinutes(it) },
+                        onEnforcementModeChanged = { viewModel.setEnforcementMode(it) },
+                        onStrictModeChanged = { viewModel.setStrictMode(it) },
+                        onSoundChanged = { viewModel.setSoundEnabled(it) },
+                        onVibrationChanged = { viewModel.setVibrationEnabled(it) },
+                        onAppThemeChanged = { viewModel.setAppTheme(it) },
+                        onBack = { isSettingsOpen = false }
+                    )
+                } else {
+                    MainScreen(
+                        status = status,
+                        preferences = preferences,
+                        hasOverlayPermission = hasOverlayPermission,
+                        hasNotificationPermission = hasNotificationPermission,
+                        onStart = { VisionTimerService.start(this) },
+                        onPause = { sendServiceAction(VisionTimerService.ACTION_PAUSE) },
+                        onResume = { sendServiceAction(VisionTimerService.ACTION_RESUME) },
+                        onStop = { VisionTimerService.stop(this) },
+                        onTriggerBreak = { sendServiceAction(VisionTimerService.ACTION_TRIGGER_BREAK) },
+                        onOpenSettings = { isSettingsOpen = true },
+                        onRequestOverlayPermission = {
+                            refreshPermissionStates()
+                        },
+                        onRequestNotificationPermission = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }

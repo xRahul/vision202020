@@ -60,6 +60,7 @@ class PreferencesRepositoryTest {
         assertEquals(false, prefs.strictMode)
         assertEquals(true, prefs.soundEnabled)
         assertEquals(true, prefs.vibrationEnabled)
+        assertEquals(AppThemeMode.OLED_BLACK, prefs.appTheme)
     }
 
     @Test
@@ -69,6 +70,7 @@ class PreferencesRepositoryTest {
         repository.updateNaturalBreakMinutes(10)
         repository.updateEnforcementMode(EnforcementMode.NOTIFICATION_ONLY)
         repository.updateStrictMode(true)
+        repository.updateAppTheme(AppThemeMode.LIGHT)
 
         val updated = repository.preferencesFlow.first()
         assertEquals(25, updated.workDurationMinutes)
@@ -76,5 +78,6 @@ class PreferencesRepositoryTest {
         assertEquals(10, updated.naturalBreakMinutes)
         assertEquals(EnforcementMode.NOTIFICATION_ONLY, updated.enforcementMode)
         assertTrue(updated.strictMode)
+        assertEquals(AppThemeMode.LIGHT, updated.appTheme)
     }
 }

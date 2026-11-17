@@ -25,6 +25,7 @@ interface PreferencesRepository {
     suspend fun updateStrictMode(enabled: Boolean)
     suspend fun updateSoundEnabled(enabled: Boolean)
     suspend fun updateVibrationEnabled(enabled: Boolean)
+    suspend fun updateAppTheme(theme: AppThemeMode)
 }
 
 class PreferencesRepositoryImpl(
@@ -39,6 +40,7 @@ class PreferencesRepositoryImpl(
         val STRICT_MODE = booleanPreferencesKey("strict_mode")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
         val VIBRATION_ENABLED = booleanPreferencesKey("vibration_enabled")
+        val APP_THEME = stringPreferencesKey("app_theme")
     }
 
     override val preferencesFlow: Flow<UserPreferences> = dataStore.data
@@ -57,11 +59,18 @@ class PreferencesRepositoryImpl(
             val strict = preferences[PreferencesKeys.STRICT_MODE] ?: false
             val sound = preferences[PreferencesKeys.SOUND_ENABLED] ?: true
             val vibe = preferences[PreferencesKeys.VIBRATION_ENABLED] ?: true
+            val themeStr = preferences[PreferencesKeys.APP_THEME] ?: AppThemeMode.OLED_BLACK.name
 
             val mode = try {
                 EnforcementMode.valueOf(modeStr)
             } catch (e: IllegalArgumentException) {
                 EnforcementMode.BLOCKER_OVERLAY
+            }
+
+            val theme = try {
+                AppThemeMode.valueOf(themeStr)
+            } catch (e: IllegalArgumentException) {
+                AppThemeMode.OLED_BLACK
             }
 
             UserPreferences(
@@ -71,7 +80,8 @@ class PreferencesRepositoryImpl(
                 enforcementMode = mode,
                 strictMode = strict,
                 soundEnabled = sound,
-                vibrationEnabled = vibe
+                vibrationEnabled = vibe,
+                appTheme = theme
             )
         }
 
@@ -114,6 +124,12 @@ class PreferencesRepositoryImpl(
     override suspend fun updateVibrationEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.VIBRATION_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun updateAppTheme(theme: AppThemeMode) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.APP_THEME] = theme.name
         }
     }
 }
