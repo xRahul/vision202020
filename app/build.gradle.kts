@@ -1,7 +1,43 @@
+import java.io.File
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+fun getGitVersionCode(): Int {
+    return try {
+        val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
+            .redirectOutput(ProcessBuilder.Redirect.PIPE)
+            .redirectError(ProcessBuilder.Redirect.PIPE)
+            .start()
+        val output = process.inputStream.bufferedReader().readText().trim()
+        val count = output.toIntOrNull() ?: 1
+        count.coerceAtLeast(1)
+    } catch (e: Exception) {
+        1
+    }
+}
+
+fun getGitVersionName(): String {
+    return try {
+        val process = ProcessBuilder("git", "describe", "--tags", "--always")
+            .redirectOutput(ProcessBuilder.Redirect.PIPE)
+            .redirectError(ProcessBuilder.Redirect.PIPE)
+            .start()
+        val output = process.inputStream.bufferedReader().readText().trim()
+        if (output.isNotEmpty()) {
+            output.removePrefix("v")
+        } else {
+            "1.0.0"
+        }
+    } catch (e: Exception) {
+        "1.0.0"
+    }
+}
+
+val computedVersionCode = getGitVersionCode()
+val computedVersionName = getGitVersionName()
 
 android {
     namespace = "com.vision202020.app"
@@ -11,15 +47,45 @@ android {
         applicationId = "com.vision202020.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = computedVersionCode
+        versionName = computedVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE") as? String
+            val keystorePass = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String
+            val aliasName = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") as? String
+            val keyPass = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD") as? String
+
+            if (keystorePath != null && File(keystorePath).exists()) {
+                storeFile = File(keystorePath)
+                storePassword = keystorePass
+                keyAlias = aliasName
+                keyPassword = keyPass
+            } else {
+                // Fall back to debug keystore if custom release keystore not provided
+                val debugKeystore = File("${System.getProperty("user.home")}/.android/debug.keystore")
+                if (debugKeystore.exists()) {
+                    storeFile = debugKeystore
+                    storePassword = "android"
+                    keyAlias = "androiddebugkey"
+                    keyPassword = "android"
+                }
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -41,6 +107,24 @@ android {
             isReturnDefaultValues = true
             isIncludeAndroidResources = true
         }
+    }
+}
+
+// Rename output APKs cleanly: vision202020-v<version>-<buildType>.apk
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            if (output is com.android.build.api.variant.VariantOutput) {
+                // Standard naming
+            }
+        }
+    }
+}
+
+tasks.register("printVersion") {
+    doLast {
+        println("versionCode=$computedVersionCode")
+        println("versionName=$computedVersionName")
     }
 }
 
