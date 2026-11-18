@@ -14,6 +14,7 @@ import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.ui.breakui.BreakActivity
 import `in`.rahulja.vision202020.ui.main.MainActivity
+import java.util.Locale
 
 class NotificationHelper(private val context: Context) {
 
@@ -224,7 +225,7 @@ class NotificationHelper(private val context: Context) {
         fun formatTime(totalSeconds: Int): String {
             val minutes = totalSeconds / 60
             val seconds = totalSeconds % 60
-            return String.format("%02d:%02d", minutes, seconds)
+            return String.format(Locale.ROOT, "%02d:%02d", minutes, seconds)
         }
     }
 }

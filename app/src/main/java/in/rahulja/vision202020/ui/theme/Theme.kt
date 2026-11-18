@@ -6,7 +6,6 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import `in`.rahulja.vision202020.data.AppThemeMode
@@ -65,10 +64,6 @@ fun VisionTheme(
             if (window != null) {
                 val insetsController = WindowCompat.getInsetsController(window, view)
                 val isLight = appTheme == AppThemeMode.LIGHT
-                @Suppress("DEPRECATION")
-                window.statusBarColor = colorScheme.background.toArgb()
-                @Suppress("DEPRECATION")
-                window.navigationBarColor = colorScheme.background.toArgb()
                 insetsController.isAppearanceLightStatusBars = isLight
                 insetsController.isAppearanceLightNavigationBars = isLight
             }

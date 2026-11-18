@@ -52,6 +52,7 @@ fun SettingsScreen(
     onStrictModeChanged: (Boolean) -> Unit,
     onSoundChanged: (Boolean) -> Unit,
     onVibrationChanged: (Boolean) -> Unit,
+    onStartOnBootChanged: (Boolean) -> Unit,
     onAppThemeChanged: (AppThemeMode) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -232,7 +233,6 @@ fun SettingsScreen(
             }
 
             // Section 5: About
-            val uriHandler = LocalUriHandler.current
             val context = LocalContext.current
             val versionName = remember {
                 try {
@@ -241,11 +241,12 @@ fun SettingsScreen(
                     "1.1.0"
                 }
             }
+            val uriHandler = LocalUriHandler.current
 
             SettingsCard(title = "ℹ️ About Vision 20-20-20") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Version: v$versionName",
+                        text = "Version: v${versionName}",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface

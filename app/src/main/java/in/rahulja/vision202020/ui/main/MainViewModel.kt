@@ -7,6 +7,7 @@ import `in`.rahulja.vision202020.data.EnforcementMode
 import `in`.rahulja.vision202020.data.PreferencesRepository
 import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.domain.TimerStatus
+import `in`.rahulja.vision202020.domain.VisionTimerStateHolder
 import `in`.rahulja.vision202020.service.VisionTimerService
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,7 @@ class MainViewModel(
     private val repository: PreferencesRepository
 ) : ViewModel() {
 
-    val timerStatus: StateFlow<TimerStatus> = VisionTimerService.timerStatus
+    val timerStatus: StateFlow<TimerStatus> = VisionTimerStateHolder.state
 
     val userPreferences: StateFlow<UserPreferences> = repository.preferencesFlow
         .stateIn(
@@ -71,6 +72,12 @@ class MainViewModel(
     fun setAppTheme(theme: AppThemeMode) {
         viewModelScope.launch {
             repository.updateAppTheme(theme)
+        }
+    }
+
+    fun setStartOnBoot(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.updateStartOnBoot(enabled)
         }
     }
 }

@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import androidx.core.app.ServiceCompat
 import `in`.rahulja.vision202020.data.EnforcementMode
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
@@ -14,6 +15,7 @@ import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.domain.VisionTimerEngine
+import `in`.rahulja.vision202020.domain.VisionTimerStateHolder
 import `in`.rahulja.vision202020.overlay.OverlayManager
 import androidx.glance.appwidget.updateAll
 import `in`.rahulja.vision202020.widget.VisionGlanceWidget
@@ -23,9 +25,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -42,6 +42,8 @@ class VisionTimerService : Service() {
 
     private var currentPrefs = UserPreferences()
     private var previousStatus: TimerStatus? = null
+    private var lastWidgetUpdateMs: Long = 0L
+    private var lastTimerNotificationKey: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -67,8 +69,6 @@ class VisionTimerService : Service() {
                 }
             },
             onScreenOff = {
-                tickerJob?.cancel()
-                tickerJob = null
                 engine.onScreenOff()
                 overlayManager.dismissOverlay()
             }
@@ -84,14 +84,29 @@ class VisionTimerService : Service() {
 
         serviceScope.launch {
             engine.state.collect { status ->
-                _timerStatus.value = status
+                VisionTimerStateHolder.setState(status)
                 handleStateChange(status)
             }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
+        if (intent == null || intent.action == null) {
+            // System restarted a sticky service with a null intent.
+            // Restore last known state if session was active, otherwise stop.
+            val current = VisionTimerStateHolder.state.value
+            if (current is TimerStatus.Idle) {
+                stopSelf()
+                return Service.START_NOT_STICKY
+            }
+            // Session was active: re-establish foreground notification and ticker.
+            startForegroundServiceWithNotification()
+            if (current is TimerStatus.Working && !current.isScreenPaused) {
+                startTicker()
+            }
+            return Service.START_STICKY
+        }
+        when (intent.action) {
             ACTION_START -> startTimer()
             ACTION_PAUSE -> engine.pause()
             ACTION_RESUME -> engine.resume()
@@ -100,7 +115,7 @@ class VisionTimerService : Service() {
             ACTION_TRIGGER_BREAK -> engine.triggerBreak()
             ACTION_COMPLETE_BREAK -> engine.completeBreak()
         }
-        return START_STICKY
+        return Service.START_STICKY
     }
 
     private fun startTimer() {
@@ -142,10 +157,25 @@ class VisionTimerService : Service() {
         }
     }
 
+    private fun timerNotificationKey(status: TimerStatus): String {
+        return when (status) {
+            is TimerStatus.Working -> "W:${status.remainingSeconds}:${status.isScreenPaused}"
+            is TimerStatus.RestBreak -> "R:${status.remainingSeconds}"
+            is TimerStatus.Snoozed -> "S:${status.remainingSeconds}"
+            is TimerStatus.Idle -> "I"
+        }
+    }
+
     private fun handleStateChange(status: TimerStatus) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val notification = notificationHelper.buildTimerNotification(status)
-        notificationManager.notify(NotificationHelper.NOTIFICATION_ID_TIMER, notification)
+
+        // Only rebuild and post the timer notification when its content changes.
+        val key = timerNotificationKey(status)
+        if (key != lastTimerNotificationKey) {
+            lastTimerNotificationKey = key
+            val notification = notificationHelper.buildTimerNotification(status)
+            notificationManager.notify(NotificationHelper.NOTIFICATION_ID_TIMER, notification)
+        }
 
         when (status) {
             is TimerStatus.RestBreak -> {
@@ -186,11 +216,16 @@ class VisionTimerService : Service() {
 
         previousStatus = status
 
-        serviceScope.launch {
-            try {
-                VisionGlanceWidget().updateAll(this@VisionTimerService)
-            } catch (e: Exception) {
-                // Ignore if no active glance widget attached
+        // Throttle glance widget updates: at most once every 5 seconds.
+        val now = SystemClock.uptimeMillis()
+        if (now - lastWidgetUpdateMs >= WIDGET_UPDATE_INTERVAL_MS) {
+            lastWidgetUpdateMs = now
+            serviceScope.launch {
+                try {
+                    VisionGlanceWidget().updateAll(this@VisionTimerService)
+                } catch (e: Exception) {
+                    // Ignore if no active glance widget attached
+                }
             }
         }
     }
@@ -200,7 +235,7 @@ class VisionTimerService : Service() {
         overlayManager.dismissOverlay()
         soundAlertHelper.release()
         serviceScope.cancel()
-        _timerStatus.value = TimerStatus.Idle
+        VisionTimerStateHolder.setState(TimerStatus.Idle)
         super.onDestroy()
     }
 
@@ -215,8 +250,9 @@ class VisionTimerService : Service() {
         const val ACTION_TRIGGER_BREAK = "in.rahulja.vision202020.action.TRIGGER_BREAK"
         const val ACTION_COMPLETE_BREAK = "in.rahulja.vision202020.action.COMPLETE_BREAK"
 
-        private val _timerStatus = MutableStateFlow<TimerStatus>(TimerStatus.Idle)
-        val timerStatus: StateFlow<TimerStatus> = _timerStatus.asStateFlow()
+        const val WIDGET_UPDATE_INTERVAL_MS = 5000L
+
+        val timerStatus: StateFlow<TimerStatus> = VisionTimerStateHolder.state
 
         fun start(context: Context) {
             val intent = Intent(context, VisionTimerService::class.java).apply { action = ACTION_START }
@@ -233,7 +269,7 @@ class VisionTimerService : Service() {
         }
 
         fun toggle(context: Context) {
-            when (_timerStatus.value) {
+            when (VisionTimerStateHolder.state.value) {
                 is TimerStatus.Idle -> start(context)
                 else -> stop(context)
             }

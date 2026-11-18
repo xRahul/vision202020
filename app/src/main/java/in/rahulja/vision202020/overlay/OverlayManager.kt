@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import android.util.Log
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -107,6 +108,7 @@ class OverlayManager(private val context: Context) {
             overlayView = composeView
             _isShowing = true
         } catch (e: Exception) {
+            Log.w("OverlayManager", "Failed to show overlay", e)
             _isShowing = false
             overlayView = null
             activeLifecycleOwner = null

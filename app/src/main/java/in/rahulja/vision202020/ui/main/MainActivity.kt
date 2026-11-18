@@ -10,10 +10,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.dataStore
@@ -23,7 +25,17 @@ import `in`.rahulja.vision202020.ui.theme.VisionTheme
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: MainViewModel
+    private val viewModel: MainViewModel by viewModels(
+        factoryProducer = {
+            object : ViewModelProvider.Factory {
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                    return MainViewModel(
+                        PreferencesRepositoryImpl(applicationContext.dataStore)
+                    ) as T
+                }
+            }
+        }
+    )
 
     private var hasOverlayPermission by mutableStateOf(false)
     private var hasNotificationPermission by mutableStateOf(false)
@@ -31,9 +43,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val repository = PreferencesRepositoryImpl(applicationContext.dataStore)
-        viewModel = MainViewModel(repository)
 
         refreshPermissionStates()
 
@@ -59,6 +68,7 @@ class MainActivity : ComponentActivity() {
                         onSoundChanged = { viewModel.setSoundEnabled(it) },
                         onVibrationChanged = { viewModel.setVibrationEnabled(it) },
                         onAppThemeChanged = { viewModel.setAppTheme(it) },
+                        onStartOnBootChanged = { viewModel.setStartOnBoot(it) },
                         onBack = { isSettingsOpen = false }
                     )
                 } else {

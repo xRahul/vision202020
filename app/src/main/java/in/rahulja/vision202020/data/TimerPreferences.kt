@@ -19,5 +19,6 @@ data class UserPreferences(
     val strictMode: Boolean = false,
     val soundEnabled: Boolean = true,
     val vibrationEnabled: Boolean = true,
-    val appTheme: AppThemeMode = AppThemeMode.OLED_BLACK
+    val appTheme: AppThemeMode = AppThemeMode.OLED_BLACK,
+    val startOnBoot: Boolean = false
 )

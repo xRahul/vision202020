@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 
 class SoundAlertHelper(private val context: Context) {
 
@@ -17,6 +18,7 @@ class SoundAlertHelper(private val context: Context) {
             toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
         } catch (e: Exception) {
             // Audio device unavailable or restricted
+            Log.d("SoundAlertHelper", "ToneGenerator init failed", e)
         }
     }
 
@@ -26,6 +28,7 @@ class SoundAlertHelper(private val context: Context) {
                 toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 250)
             } catch (e: Exception) {
                 // Ignore audio failure
+                Log.d("SoundAlertHelper", "ToneGenerator start failed", e)
             }
         }
         if (vibrationEnabled) {
@@ -39,6 +42,7 @@ class SoundAlertHelper(private val context: Context) {
                 toneGenerator?.startTone(ToneGenerator.TONE_PROP_ACK, 200)
             } catch (e: Exception) {
                 // Ignore audio failure
+                Log.d("SoundAlertHelper", "ToneGenerator start failed", e)
             }
         }
         if (vibrationEnabled) {
@@ -64,6 +68,7 @@ class SoundAlertHelper(private val context: Context) {
             }
         } catch (e: Exception) {
             // Ignore vibration failure
+            Log.d("SoundAlertHelper", "Vibration failed", e)
         }
     }
 
@@ -73,6 +78,7 @@ class SoundAlertHelper(private val context: Context) {
             toneGenerator = null
         } catch (e: Exception) {
             // Ignore
+            Log.d("SoundAlertHelper", "ToneGenerator release failed", e)
         }
     }
 }

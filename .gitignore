@@ -12,3 +12,4 @@ docs/superpowers/
 *.creds
 __pycache__/
 *.pyc
+.codegraph/

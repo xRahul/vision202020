@@ -25,7 +25,7 @@ class ScreenStateReceiver(
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_SCREEN_OFF)
             }
-            context.registerReceiver(this, filter)
+            context.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED)
             isRegistered = true
         }
     }

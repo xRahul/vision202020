@@ -26,6 +26,7 @@ interface PreferencesRepository {
     suspend fun updateSoundEnabled(enabled: Boolean)
     suspend fun updateVibrationEnabled(enabled: Boolean)
     suspend fun updateAppTheme(theme: AppThemeMode)
+    suspend fun updateStartOnBoot(enabled: Boolean)
 }
 
 class PreferencesRepositoryImpl(
@@ -41,6 +42,7 @@ class PreferencesRepositoryImpl(
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
         val VIBRATION_ENABLED = booleanPreferencesKey("vibration_enabled")
         val APP_THEME = stringPreferencesKey("app_theme")
+        val START_ON_BOOT = booleanPreferencesKey("start_on_boot")
     }
 
     override val preferencesFlow: Flow<UserPreferences> = dataStore.data
@@ -60,6 +62,7 @@ class PreferencesRepositoryImpl(
             val sound = preferences[PreferencesKeys.SOUND_ENABLED] ?: true
             val vibe = preferences[PreferencesKeys.VIBRATION_ENABLED] ?: true
             val themeStr = preferences[PreferencesKeys.APP_THEME] ?: AppThemeMode.OLED_BLACK.name
+            val startOnBoot = preferences[PreferencesKeys.START_ON_BOOT] ?: false
 
             val mode = try {
                 EnforcementMode.valueOf(modeStr)
@@ -81,7 +84,8 @@ class PreferencesRepositoryImpl(
                 strictMode = strict,
                 soundEnabled = sound,
                 vibrationEnabled = vibe,
-                appTheme = theme
+                appTheme = theme,
+                startOnBoot = startOnBoot
             )
         }
 
@@ -130,6 +134,12 @@ class PreferencesRepositoryImpl(
     override suspend fun updateAppTheme(theme: AppThemeMode) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.APP_THEME] = theme.name
+        }
+    }
+
+    override suspend fun updateStartOnBoot(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.START_ON_BOOT] = enabled
         }
     }
 }
