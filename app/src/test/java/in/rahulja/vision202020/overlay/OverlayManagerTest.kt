@@ -1,7 +1,10 @@
 package `in`.rahulja.vision202020.overlay
 
 import android.content.Context
+import android.os.Build
+import android.view.WindowManager
 import androidx.test.core.app.ApplicationProvider
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -47,6 +50,13 @@ class OverlayManagerTest {
         )
         assertTrue(overlayManager.isShowing)
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            assertEquals(
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES,
+                overlayManager.currentLayoutParams?.layoutInDisplayCutoutMode
+            )
+        }
+
         overlayManager.dismissOverlay()
         assertFalse(overlayManager.isShowing)
 
@@ -86,6 +96,13 @@ class OverlayManagerTest {
         // When showing, calling onConfigurationChanged updates view layout smoothly
         overlayManager.onConfigurationChanged(config)
         assertTrue(overlayManager.isShowing)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            assertEquals(
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES,
+                overlayManager.currentLayoutParams?.layoutInDisplayCutoutMode
+            )
+        }
 
         overlayManager.dismissOverlay()
         assertFalse(overlayManager.isShowing)

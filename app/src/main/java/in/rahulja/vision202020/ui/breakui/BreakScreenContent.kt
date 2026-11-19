@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,6 +100,7 @@ fun BreakScreenContent(
 
         if (isLandscape) {
             BreakScreenLandscapeContent(
+                maxHeight = maxHeight,
                 scale = scale,
                 progress = progress,
                 remainingSeconds = remainingSeconds,
@@ -109,6 +112,7 @@ fun BreakScreenContent(
             )
         } else {
             BreakScreenPortraitContent(
+                maxHeight = maxHeight,
                 scale = scale,
                 progress = progress,
                 remainingSeconds = remainingSeconds,
@@ -124,6 +128,7 @@ fun BreakScreenContent(
 
 @Composable
 private fun BreakScreenLandscapeContent(
+    maxHeight: Dp,
     scale: Float,
     progress: Float,
     remainingSeconds: Int,
@@ -137,9 +142,10 @@ private fun BreakScreenLandscapeContent(
     Row(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .defaultMinSize(minHeight = maxHeight)
             .safeDrawingPadding()
-            .padding(horizontal = 24.dp, vertical = 12.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -214,6 +220,7 @@ private fun BreakScreenLandscapeContent(
 
 @Composable
 private fun BreakScreenPortraitContent(
+    maxHeight: Dp,
     scale: Float,
     progress: Float,
     remainingSeconds: Int,
@@ -227,9 +234,10 @@ private fun BreakScreenPortraitContent(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .defaultMinSize(minHeight = maxHeight)
             .safeDrawingPadding()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -349,6 +357,9 @@ private fun BreakActionButtons(
     onSnooze: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentOnSkip by rememberUpdatedState(onSkip)
+    val currentOnHoldingChanged by rememberUpdatedState(onHoldingChanged)
+
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.Center,
@@ -376,13 +387,13 @@ private fun BreakActionButtons(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onPress = {
-                                onHoldingChanged(true)
+                                currentOnHoldingChanged(true)
                                 val released = tryAwaitRelease()
-                                onHoldingChanged(false)
+                                currentOnHoldingChanged(false)
                             },
                             onLongPress = {
-                                onHoldingChanged(false)
-                                onSkip()
+                                currentOnHoldingChanged(false)
+                                currentOnSkip()
                             }
                         )
                     }

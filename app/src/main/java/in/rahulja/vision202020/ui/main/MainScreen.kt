@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -95,6 +96,7 @@ fun MainScreen(
 
             if (isLandscape) {
                 MainScreenLandscapeContent(
+                    maxHeight = maxHeight,
                     status = status,
                     preferences = preferences,
                     hasOverlayPermission = hasOverlayPermission,
@@ -109,6 +111,7 @@ fun MainScreen(
                 )
             } else {
                 MainScreenPortraitContent(
+                    maxHeight = maxHeight,
                     status = status,
                     preferences = preferences,
                     hasOverlayPermission = hasOverlayPermission,
@@ -128,6 +131,7 @@ fun MainScreen(
 
 @Composable
 private fun MainScreenLandscapeContent(
+    maxHeight: Dp,
     status: TimerStatus,
     preferences: UserPreferences,
     hasOverlayPermission: Boolean,
@@ -144,8 +148,9 @@ private fun MainScreenLandscapeContent(
     Row(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 8.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .defaultMinSize(minHeight = maxHeight)
+            .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -199,6 +204,7 @@ private fun MainScreenLandscapeContent(
 
 @Composable
 private fun MainScreenPortraitContent(
+    maxHeight: Dp,
     status: TimerStatus,
     preferences: UserPreferences,
     hasOverlayPermission: Boolean,
@@ -215,10 +221,11 @@ private fun MainScreenPortraitContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .defaultMinSize(minHeight = maxHeight)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
+        verticalArrangement = Arrangement.Center
     ) {
         PermissionGateCard(
             hasOverlayPermission = hasOverlayPermission,
@@ -227,9 +234,11 @@ private fun MainScreenPortraitContent(
             onRequestNotificationPermission = onRequestNotificationPermission
         )
 
+        Spacer(modifier = Modifier.height(8.dp))
+
         ModeBadge()
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         TimerProgressCircle(
             status = status,
@@ -239,7 +248,7 @@ private fun MainScreenPortraitContent(
             timeTextSize = 46.sp
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         TimerActionControls(
             status = status,

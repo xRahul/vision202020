@@ -1,12 +1,14 @@
 package `in`.rahulja.vision202020.ui
 
-import android.content.Context
-import android.content.res.Configuration
-import androidx.compose.ui.platform.ComposeView
-import androidx.test.core.app.ApplicationProvider
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import `in`.rahulja.vision202020.ui.breakui.BreakScreenContent
 import `in`.rahulja.vision202020.ui.theme.VisionTheme
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -16,55 +18,79 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class BreakScreenContentTest {
 
-    @Test
-    fun testBreakScreenContentRendersInPortrait() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val portraitConfig = Configuration(context.resources.configuration).apply {
-            orientation = Configuration.ORIENTATION_PORTRAIT
-            screenWidthDp = 392
-            screenHeightDp = 800
-        }
-        val portraitContext = context.createConfigurationContext(portraitConfig)
+    @get:Rule
+    val composeTestRule = createComposeRule()
 
-        val composeView = ComposeView(portraitContext).apply {
-            setContent {
-                VisionTheme {
-                    BreakScreenContent(
-                        remainingSeconds = 15,
-                        totalSeconds = 20,
-                        strictMode = false,
-                        onSkip = {},
-                        onSnooze = {}
-                    )
-                }
+    @Test
+    @Config(qualifiers = "w392dp-h800dp-port")
+    fun testBreakScreenContentRendersInPortrait() {
+        var skipped = false
+        var snoozed = false
+
+        composeTestRule.setContent {
+            VisionTheme {
+                BreakScreenContent(
+                    remainingSeconds = 15,
+                    totalSeconds = 20,
+                    strictMode = false,
+                    onSkip = { skipped = true },
+                    onSnooze = { snoozed = true }
+                )
             }
         }
-        assertNotNull("ComposeView in portrait should not be null", composeView)
+
+        composeTestRule.onNodeWithText("Rest Your Eyes").assertIsDisplayed()
+        composeTestRule.onNodeWithText("15").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Snooze 5m").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Skip Break").performScrollTo().assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Skip Break").performClick()
+        assertTrue("onSkip should be triggered", skipped)
     }
 
     @Test
+    @Config(qualifiers = "w800dp-h392dp-land")
     fun testBreakScreenContentRendersInLandscape() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val landscapeConfig = Configuration(context.resources.configuration).apply {
-            orientation = Configuration.ORIENTATION_LANDSCAPE
-            screenWidthDp = 800
-            screenHeightDp = 360
-        }
-        val landscapeContext = context.createConfigurationContext(landscapeConfig)
+        var snoozed = false
 
-        val composeView = ComposeView(landscapeContext).apply {
-            setContent {
-                VisionTheme {
-                    BreakScreenContent(
-                        remainingSeconds = 15,
-                        totalSeconds = 20,
-                        strictMode = true,
-                        onSkip = {},
-                        onSnooze = {}
-                    )
-                }
+        composeTestRule.setContent {
+            VisionTheme {
+                BreakScreenContent(
+                    remainingSeconds = 12,
+                    totalSeconds = 20,
+                    strictMode = false,
+                    onSkip = {},
+                    onSnooze = { snoozed = true }
+                )
             }
         }
-        assertNotNull("ComposeView in landscape should not be null", composeView)
+
+        composeTestRule.onNodeWithText("Rest Your Eyes").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Snooze 5m").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Skip Break").assertIsDisplayed()
+        composeTestRule.onNodeWithText("12").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Snooze 5m").performClick()
+        assertTrue("onSnooze should be triggered", snoozed)
+    }
+
+    @Test
+    @Config(qualifiers = "w800dp-h392dp-land")
+    fun testBreakScreenContentStrictModeInLandscape() {
+        composeTestRule.setContent {
+            VisionTheme {
+                BreakScreenContent(
+                    remainingSeconds = 18,
+                    totalSeconds = 20,
+                    strictMode = true,
+                    onSkip = {},
+                    onSnooze = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Rest Your Eyes").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Snooze 5m").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Hold 2s to Skip").assertIsDisplayed()
     }
 }

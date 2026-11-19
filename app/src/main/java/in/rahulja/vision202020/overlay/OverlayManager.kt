@@ -25,12 +25,29 @@ import `in`.rahulja.vision202020.ui.theme.VisionTheme
 
 class OverlayManager(private val context: Context) {
 
+    private val windowContext: Context =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                context.createWindowContext(
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    null
+                )
+            } catch (e: Exception) {
+                context
+            }
+        } else {
+            context
+        }
+
     private val windowManager: WindowManager =
-        context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        windowContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
     private var overlayView: View? = null
     private var activeLifecycleOwner: OverlayLifecycleOwner? = null
     private val remainingSecondsState = mutableIntStateOf(20)
+
+    internal var currentLayoutParams: WindowManager.LayoutParams? = null
+        private set
 
     private var _isShowing: Boolean = false
     val isShowing: Boolean get() = _isShowing
@@ -85,7 +102,7 @@ class OverlayManager(private val context: Context) {
         lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         activeLifecycleOwner = lifecycleOwner
 
-        val composeView = ComposeView(context).apply {
+        val composeView = ComposeView(windowContext).apply {
             setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(lifecycleOwner)
             setContent {
@@ -110,11 +127,13 @@ class OverlayManager(private val context: Context) {
         try {
             windowManager.addView(composeView, layoutParams)
             overlayView = composeView
+            currentLayoutParams = layoutParams
             _isShowing = true
         } catch (e: Exception) {
             Log.w("OverlayManager", "Failed to show overlay", e)
             _isShowing = false
             overlayView = null
+            currentLayoutParams = null
             activeLifecycleOwner = null
         }
     }
@@ -148,6 +167,7 @@ class OverlayManager(private val context: Context) {
             // Already detached
         } finally {
             overlayView = null
+            currentLayoutParams = null
             activeLifecycleOwner = null
             _isShowing = false
         }
