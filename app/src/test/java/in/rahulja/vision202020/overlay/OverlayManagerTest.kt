@@ -66,4 +66,28 @@ class OverlayManagerTest {
         )
         assertFalse("Overlay must not show without permission", overlayManager.isShowing)
     }
+
+    @Test
+    fun testOnConfigurationChangedWhenShowingAndNotShowing() {
+        ShadowSettings.setCanDrawOverlays(true)
+
+        // When not showing, calling onConfigurationChanged is a safe no-op
+        val config = android.content.res.Configuration()
+        overlayManager.onConfigurationChanged(config)
+
+        // Show overlay
+        overlayManager.showBreakOverlay(
+            remainingSeconds = 20,
+            onSkip = {},
+            onSnooze = {}
+        )
+        assertTrue(overlayManager.isShowing)
+
+        // When showing, calling onConfigurationChanged updates view layout smoothly
+        overlayManager.onConfigurationChanged(config)
+        assertTrue(overlayManager.isShowing)
+
+        overlayManager.dismissOverlay()
+        assertFalse(overlayManager.isShowing)
+    }
 }

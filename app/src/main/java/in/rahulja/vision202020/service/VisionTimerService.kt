@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
@@ -88,6 +89,11 @@ class VisionTimerService : Service() {
                 handleStateChange(status)
             }
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        overlayManager.onConfigurationChanged(newConfig)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

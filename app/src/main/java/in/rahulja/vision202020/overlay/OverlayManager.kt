@@ -1,6 +1,7 @@
 package `in`.rahulja.vision202020.overlay
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.os.Build
 import android.provider.Settings
@@ -72,6 +73,9 @@ class OverlayManager(private val context: Context) {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
         }
 
         val lifecycleOwner = OverlayLifecycleOwner()
@@ -117,6 +121,17 @@ class OverlayManager(private val context: Context) {
 
     fun updateCountdown(remainingSeconds: Int) {
         remainingSecondsState.intValue = remainingSeconds
+    }
+
+    fun onConfigurationChanged(newConfig: Configuration) {
+        if (!_isShowing || overlayView == null) return
+        try {
+            overlayView?.let { view ->
+                windowManager.updateViewLayout(view, view.layoutParams)
+            }
+        } catch (e: Exception) {
+            Log.w("OverlayManager", "Failed to update overlay view layout on config change", e)
+        }
     }
 
     fun dismissOverlay() {
