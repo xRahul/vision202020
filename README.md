@@ -10,6 +10,16 @@ An open-source, offline, privacy-first native Android eye wellness companion imp
 
 ---
 
+## Screenshots
+
+| Idle | Working session | Eye-rest break | Settings |
+|:---:|:---:|:---:|:---:|
+| <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01-idle.png" width="200" alt="Idle screen" /> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/02-working-session.png" width="200" alt="Working session" /> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/03-break-screen.png" width="200" alt="Eye rest break" /> | <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04-settings.png" width="200" alt="Settings" /> |
+
+Captured from the minified release build on a Pixel 7a (Android 17).
+
+---
+
 ## Why Vision 20-20-20?
 
 Extended screen time on phones and laptops drastically decreases natural blinking rates from ~18 blinks/min down to ~5 blinks/min, inducing tear film dry spots and chronic ciliary muscle accommodation spasms (**Computer Vision Syndrome / Digital Asthenopia**).
