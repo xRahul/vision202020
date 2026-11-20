@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 
 class ScreenStateReceiver(
     private val onScreenOn: () -> Unit,
@@ -25,7 +26,12 @@ class ScreenStateReceiver(
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_SCREEN_OFF)
             }
-            context.registerReceiver(this, filter, Context.RECEIVER_NOT_EXPORTED)
+            ContextCompat.registerReceiver(
+                context,
+                this,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
             isRegistered = true
         }
     }

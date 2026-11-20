@@ -52,18 +52,13 @@ class OverlayManager(private val context: Context) {
     private var _isShowing: Boolean = false
     val isShowing: Boolean get() = _isShowing
 
-    fun canDrawOverlays(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(context)
-        } else {
-            true
-        }
-    }
+    fun canDrawOverlays(): Boolean = Settings.canDrawOverlays(context)
 
     fun showBreakOverlay(
         remainingSeconds: Int,
         totalSeconds: Int = 20,
         strictMode: Boolean = false,
+        snoozeMinutes: Int = 5,
         appTheme: AppThemeMode = AppThemeMode.OLED_BLACK,
         onSkip: () -> Unit,
         onSnooze: () -> Unit
@@ -78,12 +73,7 @@ class OverlayManager(private val context: Context) {
         val layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.TYPE_PHONE
-            },
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
@@ -111,6 +101,7 @@ class OverlayManager(private val context: Context) {
                         remainingSeconds = remainingSecondsState.intValue,
                         totalSeconds = totalSeconds,
                         strictMode = strictMode,
+                        snoozeMinutes = snoozeMinutes,
                         onSkip = {
                             dismissOverlay()
                             onSkip()

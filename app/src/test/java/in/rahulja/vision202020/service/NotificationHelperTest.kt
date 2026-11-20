@@ -47,7 +47,6 @@ class NotificationHelperTest {
             remainingSeconds = 1195,
             elapsedSeconds = 5,
             totalSeconds = 1200,
-            isScreenPaused = false
         )
 
         val notification = notificationHelper.buildTimerNotification(status)
@@ -55,11 +54,12 @@ class NotificationHelperTest {
         assertEquals(NotificationHelper.CHANNEL_ID_TIMER, notification.channelId)
         val actions = notification.actions
         assertNotNull(actions)
-        // Working state should have Pause, Take Break, Stop
-        assertEquals(3, actions.size)
+        // Working state should have Pause, Take Break, Reset, Stop
+        assertEquals(4, actions.size)
         assertEquals("Pause", actions[0].title.toString())
         assertEquals("Rest Now", actions[1].title.toString())
-        assertEquals("Stop", actions[2].title.toString())
+        assertEquals("Reset", actions[2].title.toString())
+        assertEquals("Stop", actions[3].title.toString())
     }
 
     @Test

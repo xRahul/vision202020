@@ -15,16 +15,14 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
-import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
-import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.NotificationHelper
 import `in`.rahulja.vision202020.service.VisionTimerService
@@ -34,21 +32,37 @@ class VisionGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val status = VisionTimerService.timerStatus.value
         val (titleText, buttonText) = when (status) {
-            is TimerStatus.Working -> {
-                val formatted = NotificationHelper.formatTime(status.remainingSeconds)
-                val label = if (status.isScreenPaused) "Paused: $formatted" else "$formatted remaining"
-                Pair(label, "Stop")
-            }
-            is TimerStatus.RestBreak -> {
-                Pair("Rest eyes: ${status.remainingSeconds}s", "Skip")
-            }
-            is TimerStatus.Snoozed -> {
-                val formatted = NotificationHelper.formatTime(status.remainingSeconds)
-                Pair("Snoozed: $formatted", "Stop")
-            }
-            is TimerStatus.Idle -> {
-                Pair("20-20-20 Ready", "Start")
-            }
+            is TimerStatus.Working -> Pair(
+                if (status.isScreenPaused) {
+                    context.getString(
+                        R.string.widget_paused,
+                        NotificationHelper.formatTime(status.remainingSeconds)
+                    )
+                } else {
+                    context.getString(
+                        R.string.widget_remaining,
+                        NotificationHelper.formatTime(status.remainingSeconds)
+                    )
+                },
+                context.getString(
+                    if (status.isScreenPaused) R.string.widget_resume else R.string.action_pause
+                )
+            )
+            is TimerStatus.RestBreak -> Pair(
+                context.getString(R.string.widget_break, status.remainingSeconds),
+                context.getString(R.string.widget_skip)
+            )
+            is TimerStatus.Snoozed -> Pair(
+                context.getString(
+                    R.string.widget_snoozed,
+                    NotificationHelper.formatTime(status.remainingSeconds)
+                ),
+                context.getString(R.string.widget_rest_now)
+            )
+            is TimerStatus.Idle -> Pair(
+                context.getString(R.string.widget_idle),
+                context.getString(R.string.widget_start)
+            )
         }
 
         provideContent {
@@ -61,7 +75,7 @@ class VisionGlanceWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Vision 20-20-20",
+                        text = context.getString(R.string.widget_title),
                         style = TextStyle(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
@@ -92,17 +106,7 @@ class WidgetToggleActionCallback : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        val currentStatus = VisionTimerService.timerStatus.value
-        when (currentStatus) {
-            is TimerStatus.Idle -> VisionTimerService.start(context)
-            is TimerStatus.RestBreak -> {
-                val intent = android.content.Intent(context, VisionTimerService::class.java).apply {
-                    action = VisionTimerService.ACTION_COMPLETE_BREAK
-                }
-                context.startService(intent)
-            }
-            else -> VisionTimerService.stop(context)
-        }
+        VisionTimerService.toggle(context)
         VisionGlanceWidget().update(context, glanceId)
     }
 }

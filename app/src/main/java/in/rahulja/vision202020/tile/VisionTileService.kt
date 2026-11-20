@@ -1,5 +1,6 @@
 package `in`.rahulja.vision202020.tile
 
+import android.content.Context
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.service.quicksettings.Tile
@@ -52,7 +53,7 @@ class VisionTileService : TileService() {
     private fun updateTile(status: TimerStatus) {
         val tile = qsTile ?: return
         tile.icon = Icon.createWithResource(this, R.drawable.ic_stat_vision)
-        val (state, subtitle) = mapStatusToTileState(status)
+        val (state, subtitle) = mapStatusToTileState(this, status)
         if (state != lastState || subtitle != lastSubtitle) {
             lastState = state
             lastSubtitle = subtitle
@@ -65,26 +66,31 @@ class VisionTileService : TileService() {
     }
 
     companion object {
-        fun mapStatusToTileState(status: TimerStatus): Pair<Int, String> {
+        fun mapStatusToTileState(context: Context, status: TimerStatus): Pair<Int, String> {
             return when (status) {
-                is TimerStatus.Idle -> {
-                    Pair(Tile.STATE_INACTIVE, "Tap to start")
-                }
+                is TimerStatus.Idle -> Pair(
+                    Tile.STATE_INACTIVE,
+                    context.getString(R.string.tile_tap_to_start)
+                )
                 is TimerStatus.Working -> {
                     val formatted = NotificationHelper.formatTime(status.remainingSeconds)
                     if (status.isScreenPaused) {
-                        Pair(Tile.STATE_INACTIVE, "Paused ($formatted)")
+                        Pair(Tile.STATE_INACTIVE, context.getString(R.string.tile_paused, formatted))
                     } else {
-                        Pair(Tile.STATE_ACTIVE, "$formatted left")
+                        Pair(Tile.STATE_ACTIVE, context.getString(R.string.tile_left, formatted))
                     }
                 }
-                is TimerStatus.RestBreak -> {
-                    Pair(Tile.STATE_ACTIVE, "Rest: ${status.remainingSeconds}s")
-                }
-                is TimerStatus.Snoozed -> {
-                    val formatted = NotificationHelper.formatTime(status.remainingSeconds)
-                    Pair(Tile.STATE_INACTIVE, "Snoozed ($formatted)")
-                }
+                is TimerStatus.RestBreak -> Pair(
+                    Tile.STATE_ACTIVE,
+                    context.getString(R.string.tile_rest, status.remainingSeconds)
+                )
+                is TimerStatus.Snoozed -> Pair(
+                    Tile.STATE_INACTIVE,
+                    context.getString(
+                        R.string.tile_snoozed,
+                        NotificationHelper.formatTime(status.remainingSeconds)
+                    )
+                )
             }
         }
     }
