@@ -30,16 +30,16 @@ RepoType: git
 Repo: https://github.com/xRahul/vision202020.git
 
 Builds:
-  - versionName: 1.1.4
-    versionCode: 37
-    commit: v1.1.4
+  - versionName: 1.1.5
+    versionCode: 39
+    commit: v1.1.5
     subdir: app
     gradle:
       - yes
-      - -PversionCode=37
-      - -PversionName=1.1.4
+      - -PversionCode=39
+      - -PversionName=1.1.5
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
-CurrentVersion: 1.1.4
-CurrentVersionCode: 37
+CurrentVersion: 1.1.5
+CurrentVersionCode: 39
