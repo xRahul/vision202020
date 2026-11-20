@@ -1,27 +1,120 @@
 <resources>
     <string name="app_name">Vision 20-20-20</string>
     <string name="tile_name">Vision 20-20-20</string>
+    <string name="tile_tap_to_start">Tap to start</string>
+    <string name="tile_left">%s left</string>
+    <string name="tile_paused">Paused (%s)</string>
+    <string name="tile_rest">Rest: %ds</string>
+    <string name="tile_snoozed">Snoozed (%s)</string>
+
     <string name="channel_timer_name">Active Vision Session</string>
     <string name="channel_timer_desc">Displays the ongoing 20-minute countdown.</string>
     <string name="channel_break_name">20-20-20 Eye Rest Alerts</string>
     <string name="channel_break_desc">Alerts when it is time to take a 20-second eye rest break.</string>
+
     <string name="notif_title_working">Vision 20-20-20 Active</string>
     <string name="notif_content_working">%s remaining before eye rest</string>
     <string name="notif_title_paused">Vision Session Paused</string>
-    <string name="notif_content_paused">%s remaining (Screen Off)</string>
+    <string name="notif_content_paused">%s remaining</string>
     <string name="notif_title_break">Eye Rest Time!</string>
-    <string name="notif_content_break">Look 20 feet away: %s</string>
+    <string name="notif_content_break">Look 20 feet away: %s left</string>
     <string name="notif_title_snoozed">Break Snoozed</string>
     <string name="notif_content_snoozed">%s remaining until next reminder</string>
     <string name="notif_title_idle">Vision 20-20-20</string>
     <string name="notif_content_idle">Tap to start protecting your eyes</string>
+
     <string name="action_start">Start</string>
     <string name="action_resume">Resume</string>
     <string name="action_pause">Pause</string>
+    <string name="action_reset">Reset</string>
     <string name="action_take_break">Rest Now</string>
     <string name="action_stop">Stop</string>
-    <string name="action_snooze">Snooze +5m</string>
+    <string name="action_snooze">Snooze %dm</string>
     <string name="action_looked_away">I Looked Away</string>
     <string name="break_alert_title">Time for 20-20-20 Eye Rest!</string>
     <string name="break_alert_content">Gaze at an object 20 feet away for 20 seconds.</string>
+
+    <!-- Main screen -->
+    <string name="mode_badge">Mobile Screen Guard Active</string>
+    <string name="subtitle_working">Working Session</string>
+    <string name="subtitle_paused">Paused</string>
+    <string name="subtitle_paused_screen_off">Paused (Screen Off)</string>
+    <string name="subtitle_break">Eye Rest Break</string>
+    <string name="subtitle_snoozed">Break Snoozed</string>
+    <string name="subtitle_ready">Ready to Start</string>
+    <string name="action_start_session">Start Session</string>
+    <string name="action_stop_session">Stop Session</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_stop">Stop</string>
+    <string name="cd_reset">Reset timer</string>
+    <string name="cd_back">Back</string>
+    <string name="duration_minutes_short">%dm</string>
+    <string name="duration_seconds_short">%ds</string>
+    <string name="rest_seconds_value">%ds</string>
+    <string name="idle_time_value">%d:00</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="theme_card_title">App Theme</string>
+    <string name="theme_card_body">OLED Black turns off pixels completely on OLED screens to maximize battery life.</string>
+    <string name="theme_oled">OLED Black</string>
+    <string name="theme_dark">Dark Slate</string>
+    <string name="theme_light">Light</string>
+    <string name="mobile_card_title">Mobile Screen-Aware Protection</string>
+    <string name="mobile_card_body">Vision 20-20-20 counts active screen time while unlocked, sleeps with zero battery impact while locked, and auto-resets when you take a natural break.</string>
+    <string name="durations_title">Work &amp; Rest Durations</string>
+    <string name="work_duration_label">Work Duration (Standard 20m):</string>
+    <string name="rest_duration_label">Rest Duration (Standard 20s):</string>
+    <string name="natural_break_title">Natural Break Reset Threshold</string>
+    <string name="natural_break_body">Locking your phone for this long resets the 20m work timer:</string>
+    <string name="enforcement_title">Break Enforcement</string>
+    <string name="enforcement_blocker">Full-Screen Blocker (20s)</string>
+    <string name="enforcement_notification">Notification Only</string>
+    <string name="strict_mode_label">Strict Mode (Hold 2s to skip)</string>
+    <string name="snooze_title">Snooze Duration</string>
+    <string name="alerts_title">Alerts &amp; Feedback</string>
+    <string name="sound_label">Sound Alerts (Soothing Chime)</string>
+    <string name="vibration_label">Vibration Feedback</string>
+    <string name="startup_title">Session Automation</string>
+    <string name="start_on_boot_label">Start automatically after reboot</string>
+    <string name="battery_title">Battery Reliability</string>
+    <string name="battery_body">Some phone makers stop background timers. Allow this app to run without battery restrictions so the session survives.</string>
+    <string name="battery_button">Open battery settings</string>
+    <string name="about_title">About Vision 20-20-20</string>
+    <string name="about_version">Version: v%s</string>
+    <string name="about_author">Author: Rahul Jain</string>
+    <string name="about_license">License: GNU General Public License v3.0 (GPL-3.0-or-later)</string>
+    <string name="about_source">Source Code on GitHub</string>
+
+    <!-- Permission cards -->
+    <string name="permission_notification_title">Notification Permission Needed</string>
+    <string name="permission_notification_body">Allow notifications so Vision 20-20-20 can display the ongoing session timer and rest alerts.</string>
+    <string name="permission_overlay_title">Overlay Permission Needed</string>
+    <string name="permission_overlay_body">To show the 20-second blocker over reading apps, please allow \'Display over other apps\'.</string>
+    <string name="permission_fullscreen_title">Full-Screen Break Alerts</string>
+    <string name="permission_fullscreen_body">Android needs your permission to show the eye-rest screen over the lock screen. Without it, breaks appear as a notification.</string>
+    <string name="permission_enable_notifications">Enable Notifications</string>
+    <string name="permission_grant_overlay">Grant Overlay Access</string>
+    <string name="permission_grant_fullscreen">Allow Full-Screen Alerts</string>
+
+    <!-- Break screen -->
+    <string name="break_rest_eyes">Rest Your Eyes</string>
+    <string name="break_guidance">Look at an object 20 feet (6m) away.\nBlink slowly and breathe deeply.</string>
+    <string name="break_seconds">seconds</string>
+    <string name="break_snooze">Snooze %dm</string>
+    <string name="break_hold_skip">Hold 2s to Skip</string>
+    <string name="break_keep_holding">Keep holding\u2026</string>
+    <string name="break_skip">Skip Break</string>
+
+    <!-- Widget -->
+    <string name="widget_title">Vision 20-20-20</string>
+    <string name="widget_remaining">%s remaining</string>
+    <string name="widget_paused">Paused: %s</string>
+    <string name="widget_break">Rest eyes: %ds</string>
+    <string name="widget_snoozed">Snoozed: %s</string>
+    <string name="widget_idle">20-20-20 Ready</string>
+    <string name="widget_start">Start</string>
+    <string name="widget_skip">Skip</string>
+    <string name="widget_rest_now">Rest Now</string>
+    <string name="widget_resume">Resume</string>
 </resources>

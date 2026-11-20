@@ -45,6 +45,12 @@ class MainViewModel(
         }
     }
 
+    fun setSnoozeMinutes(minutes: Int) {
+        viewModelScope.launch {
+            repository.updateSnoozeMinutes(minutes)
+        }
+    }
+
     fun setEnforcementMode(mode: EnforcementMode) {
         viewModelScope.launch {
             repository.updateEnforcementMode(mode)

@@ -1,26 +1,24 @@
 package `in`.rahulja.vision202020.ui.breakui
 
-import android.app.KeyguardManager
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.Lifecycle
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.VisionTimerService
 import `in`.rahulja.vision202020.ui.theme.VisionTheme
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 class BreakActivity : ComponentActivity() {
 
@@ -29,38 +27,51 @@ class BreakActivity : ComponentActivity() {
 
         configureLockScreenDisplay()
 
+        // The break screen is a blocker: system Back must not dismiss it.
+        onBackPressedDispatcher.addCallback(this) {
+            // Intentionally swallowed. Skip requires the visible Skip / hold-to-skip control.
+        }
+
         val repository = PreferencesRepositoryImpl(applicationContext.dataStore)
 
         setContent {
             val status by VisionTimerService.timerStatus.collectAsStateWithLifecycle()
-            val preferences by repository.preferencesFlow.collectAsStateWithLifecycle(initialValue = UserPreferences())
-            val remainingSec = if (status is TimerStatus.RestBreak) (status as TimerStatus.RestBreak).remainingSeconds else 20
-            val totalSec = if (status is TimerStatus.RestBreak) (status as TimerStatus.RestBreak).totalSeconds else 20
+            val preferences by repository.preferencesFlow
+                .collectAsStateWithLifecycle(initialValue = UserPreferences())
+            // Only finish after a break was actually observed: a cold process starts at
+            // Idle and must not close the screen before the service restores its state.
+            var sawBreak by remember { mutableStateOf(status is TimerStatus.RestBreak) }
+            LaunchedEffect(Unit) {
+                // Cold start on a stale alert: never leave a blocker screen with no break.
+                kotlinx.coroutines.delay(2000)
+                if (!sawBreak) finish()
+            }
+            LaunchedEffect(status) {
+                if (status is TimerStatus.RestBreak) {
+                    sawBreak = true
+                } else if (sawBreak) {
+                    finish()
+                }
+            }
+            val breakStatus = status as? TimerStatus.RestBreak
+            val remainingSec = breakStatus?.remainingSeconds ?: preferences.restDurationSeconds
+            val totalSec = breakStatus?.totalSeconds ?: preferences.restDurationSeconds
 
             VisionTheme(appTheme = preferences.appTheme) {
                 BreakScreenContent(
                     remainingSeconds = remainingSec,
                     totalSeconds = totalSec,
                     strictMode = preferences.strictMode,
+                    snoozeMinutes = preferences.snoozeMinutes,
                     onSkip = {
-                        sendServiceAction(VisionTimerService.ACTION_COMPLETE_BREAK)
+                        if (breakStatus != null) VisionTimerService.completeBreak(this)
                         finish()
                     },
                     onSnooze = {
-                        sendServiceAction(VisionTimerService.ACTION_SNOOZE)
+                        if (breakStatus != null) VisionTimerService.snooze(this)
                         finish()
                     }
                 )
-            }
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                VisionTimerService.timerStatus.collectLatest { status ->
-                    if (status !is TimerStatus.RestBreak) {
-                        finish()
-                    }
-                }
             }
         }
     }
@@ -81,12 +92,5 @@ class BreakActivity : ComponentActivity() {
             window.attributes.layoutInDisplayCutoutMode =
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
-    }
-
-    private fun sendServiceAction(actionName: String) {
-        val intent = Intent(this, VisionTimerService::class.java).apply {
-            action = actionName
-        }
-        startService(intent)
     }
 }

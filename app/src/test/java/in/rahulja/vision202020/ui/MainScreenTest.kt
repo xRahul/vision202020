@@ -35,20 +35,23 @@ class MainScreenTest {
                     preferences = UserPreferences(),
                     hasOverlayPermission = true,
                     hasNotificationPermission = true,
+                    showFullScreenIntentCard = false,
                     onStart = { startClicked = true },
                     onPause = {},
                     onResume = {},
+                    onReset = {},
                     onStop = {},
                     onTriggerBreak = {},
                     onOpenSettings = {},
                     onRequestOverlayPermission = {},
-                    onRequestNotificationPermission = {}
+                    onRequestNotificationPermission = {},
+                    onRequestFullScreenIntent = {}
                 )
             }
         }
 
         composeTestRule.onNodeWithText("Vision 20-20-20").assertIsDisplayed()
-        composeTestRule.onNodeWithText("📱 Mobile Screen Guard Active").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Mobile Screen Guard Active").assertIsDisplayed()
         composeTestRule.onNodeWithText("Start Session").performScrollTo().assertIsDisplayed()
 
         composeTestRule.onNodeWithText("Start Session").performClick()
@@ -67,25 +70,27 @@ class MainScreenTest {
                         remainingSeconds = 1100,
                         elapsedSeconds = 100,
                         totalSeconds = 1200,
-                        isScreenPaused = false
                     ),
                     preferences = UserPreferences(),
                     hasOverlayPermission = true,
                     hasNotificationPermission = true,
+                    showFullScreenIntentCard = false,
                     onStart = {},
                     onPause = { pauseClicked = true },
                     onResume = {},
+                    onReset = {},
                     onStop = {},
                     onTriggerBreak = {},
                     onOpenSettings = {},
                     onRequestOverlayPermission = {},
-                    onRequestNotificationPermission = {}
+                    onRequestNotificationPermission = {},
+                    onRequestFullScreenIntent = {}
                 )
             }
         }
 
         composeTestRule.onNodeWithText("Vision 20-20-20").assertIsDisplayed()
-        composeTestRule.onNodeWithText("📱 Mobile Screen Guard Active").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Mobile Screen Guard Active").assertIsDisplayed()
         composeTestRule.onNodeWithText("Pause").assertIsDisplayed()
         composeTestRule.onNodeWithText("Rest Now").assertIsDisplayed()
 

@@ -1,12 +1,13 @@
 package `in`.rahulja.vision202020.ui.main
 
 import android.Manifest
-import android.content.Intent
+import android.app.NotificationManager
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
 
     private var hasOverlayPermission by mutableStateOf(false)
     private var hasNotificationPermission by mutableStateOf(false)
+    private var canUseFullScreenIntent by mutableStateOf(true)
     private var isSettingsOpen by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,6 +58,10 @@ class MainActivity : ComponentActivity() {
                 hasNotificationPermission = isGranted
             }
 
+            BackHandler(enabled = isSettingsOpen) {
+                isSettingsOpen = false
+            }
+
             VisionTheme(appTheme = preferences.appTheme) {
                 if (isSettingsOpen) {
                     SettingsScreen(
@@ -63,12 +69,13 @@ class MainActivity : ComponentActivity() {
                         onWorkDurationChanged = { viewModel.setWorkDuration(it) },
                         onRestDurationChanged = { viewModel.setRestDuration(it) },
                         onNaturalBreakChanged = { viewModel.setNaturalBreakMinutes(it) },
+                        onSnoozeChanged = { viewModel.setSnoozeMinutes(it) },
                         onEnforcementModeChanged = { viewModel.setEnforcementMode(it) },
                         onStrictModeChanged = { viewModel.setStrictMode(it) },
                         onSoundChanged = { viewModel.setSoundEnabled(it) },
                         onVibrationChanged = { viewModel.setVibrationEnabled(it) },
-                        onAppThemeChanged = { viewModel.setAppTheme(it) },
                         onStartOnBootChanged = { viewModel.setStartOnBoot(it) },
+                        onAppThemeChanged = { viewModel.setAppTheme(it) },
                         onBack = { isSettingsOpen = false }
                     )
                 } else {
@@ -77,20 +84,21 @@ class MainActivity : ComponentActivity() {
                         preferences = preferences,
                         hasOverlayPermission = hasOverlayPermission,
                         hasNotificationPermission = hasNotificationPermission,
+                        showFullScreenIntentCard = !canUseFullScreenIntent,
                         onStart = { VisionTimerService.start(this) },
-                        onPause = { sendServiceAction(VisionTimerService.ACTION_PAUSE) },
-                        onResume = { sendServiceAction(VisionTimerService.ACTION_RESUME) },
+                        onPause = { VisionTimerService.pause(this) },
+                        onResume = { VisionTimerService.resume(this) },
+                        onReset = { VisionTimerService.reset(this) },
                         onStop = { VisionTimerService.stop(this) },
-                        onTriggerBreak = { sendServiceAction(VisionTimerService.ACTION_TRIGGER_BREAK) },
+                        onTriggerBreak = { VisionTimerService.triggerBreak(this) },
                         onOpenSettings = { isSettingsOpen = true },
-                        onRequestOverlayPermission = {
-                            refreshPermissionStates()
-                        },
+                        onRequestOverlayPermission = { refreshPermissionStates() },
                         onRequestNotificationPermission = {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
-                        }
+                        },
+                        onRequestFullScreenIntent = { refreshPermissionStates() }
                     )
                 }
             }
@@ -103,11 +111,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun refreshPermissionStates() {
-        hasOverlayPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(this)
-        } else {
-            true
-        }
+        hasOverlayPermission = Settings.canDrawOverlays(this)
 
         hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
@@ -117,10 +121,12 @@ class MainActivity : ComponentActivity() {
         } else {
             true
         }
-    }
 
-    private fun sendServiceAction(actionName: String) {
-        val intent = Intent(this, VisionTimerService::class.java).apply { action = actionName }
-        startService(intent)
+        canUseFullScreenIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.canUseFullScreenIntent() ?: true
+        } else {
+            true
+        }
     }
 }

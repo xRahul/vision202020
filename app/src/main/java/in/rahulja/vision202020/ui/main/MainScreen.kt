@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
@@ -39,12 +40,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `in`.rahulja.vision202020.R
+import `in`.rahulja.vision202020.data.EnforcementMode
 import `in`.rahulja.vision202020.data.UserPreferences
+import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.NotificationHelper
 import `in`.rahulja.vision202020.ui.components.PermissionGateCard
@@ -56,14 +61,17 @@ fun MainScreen(
     preferences: UserPreferences,
     hasOverlayPermission: Boolean,
     hasNotificationPermission: Boolean,
+    showFullScreenIntentCard: Boolean,
     onStart: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
+    onReset: () -> Unit,
     onStop: () -> Unit,
     onTriggerBreak: () -> Unit,
     onOpenSettings: () -> Unit,
     onRequestOverlayPermission: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
+    onRequestFullScreenIntent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -71,17 +79,23 @@ fun MainScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Vision 20-20-20",
+                        text = stringResource(R.string.app_name),
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
                     )
                 },
                 actions = {
                     IconButton(onClick = onOpenSettings) {
-                        Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.cd_settings),
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -92,37 +106,49 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            val isLandscape = maxWidth > maxHeight
-
-            if (isLandscape) {
-                MainScreenLandscapeContent(
+            if (maxWidth > maxHeight) {
+                TimerContent(
                     maxHeight = maxHeight,
+                    isLandscape = true,
                     status = status,
                     preferences = preferences,
                     hasOverlayPermission = hasOverlayPermission,
                     hasNotificationPermission = hasNotificationPermission,
+                    showFullScreenIntentCard = showFullScreenIntentCard,
+                    outerSize = 190.dp,
+                    indicatorSize = 170.dp,
+                    timeTextSize = 36.sp,
                     onStart = onStart,
                     onPause = onPause,
                     onResume = onResume,
+                    onReset = onReset,
                     onStop = onStop,
                     onTriggerBreak = onTriggerBreak,
                     onRequestOverlayPermission = onRequestOverlayPermission,
-                    onRequestNotificationPermission = onRequestNotificationPermission
+                    onRequestNotificationPermission = onRequestNotificationPermission,
+                    onRequestFullScreenIntent = onRequestFullScreenIntent
                 )
             } else {
-                MainScreenPortraitContent(
+                TimerContent(
                     maxHeight = maxHeight,
+                    isLandscape = false,
                     status = status,
                     preferences = preferences,
                     hasOverlayPermission = hasOverlayPermission,
                     hasNotificationPermission = hasNotificationPermission,
+                    showFullScreenIntentCard = showFullScreenIntentCard,
+                    outerSize = 240.dp,
+                    indicatorSize = 220.dp,
+                    timeTextSize = 46.sp,
                     onStart = onStart,
                     onPause = onPause,
                     onResume = onResume,
+                    onReset = onReset,
                     onStop = onStop,
                     onTriggerBreak = onTriggerBreak,
                     onRequestOverlayPermission = onRequestOverlayPermission,
-                    onRequestNotificationPermission = onRequestNotificationPermission
+                    onRequestNotificationPermission = onRequestNotificationPermission,
+                    onRequestFullScreenIntent = onRequestFullScreenIntent
                 )
             }
         }
@@ -130,134 +156,111 @@ fun MainScreen(
 }
 
 @Composable
-private fun MainScreenLandscapeContent(
+private fun TimerContent(
     maxHeight: Dp,
+    isLandscape: Boolean,
     status: TimerStatus,
     preferences: UserPreferences,
     hasOverlayPermission: Boolean,
     hasNotificationPermission: Boolean,
+    showFullScreenIntentCard: Boolean,
+    outerSize: Dp,
+    indicatorSize: Dp,
+    timeTextSize: TextUnit,
     onStart: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
+    onReset: () -> Unit,
     onStop: () -> Unit,
     onTriggerBreak: () -> Unit,
     onRequestOverlayPermission: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
+    onRequestFullScreenIntent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .defaultMinSize(minHeight = maxHeight)
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Left Column: Timer Progress & Mode Badge
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            ModeBadge()
-            Spacer(modifier = Modifier.height(12.dp))
-            TimerProgressCircle(
-                status = status,
-                preferences = preferences,
-                outerSize = 190.dp,
-                indicatorSize = 170.dp,
-                timeTextSize = 36.sp
-            )
-        }
-
-        // Right Column: Permission Gate & Action Buttons
-        Column(
-            modifier = Modifier
-                .weight(1.2f)
-                .padding(start = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            PermissionGateCard(
-                hasOverlayPermission = hasOverlayPermission,
-                hasNotificationPermission = hasNotificationPermission,
-                onRequestOverlayPermission = onRequestOverlayPermission,
-                onRequestNotificationPermission = onRequestNotificationPermission
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            TimerActionControls(
-                status = status,
-                onStart = onStart,
-                onPause = onPause,
-                onResume = onResume,
-                onStop = onStop,
-                onTriggerBreak = onTriggerBreak
-            )
-        }
-    }
-}
-
-@Composable
-private fun MainScreenPortraitContent(
-    maxHeight: Dp,
-    status: TimerStatus,
-    preferences: UserPreferences,
-    hasOverlayPermission: Boolean,
-    hasNotificationPermission: Boolean,
-    onStart: () -> Unit,
-    onPause: () -> Unit,
-    onResume: () -> Unit,
-    onStop: () -> Unit,
-    onTriggerBreak: () -> Unit,
-    onRequestOverlayPermission: () -> Unit,
-    onRequestNotificationPermission: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .defaultMinSize(minHeight = maxHeight)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
+    val permissionGate: @Composable () -> Unit = {
         PermissionGateCard(
             hasOverlayPermission = hasOverlayPermission,
+            showOverlayCard = preferences.enforcementMode == EnforcementMode.BLOCKER_OVERLAY,
             hasNotificationPermission = hasNotificationPermission,
+            showFullScreenIntentCard = showFullScreenIntentCard,
             onRequestOverlayPermission = onRequestOverlayPermission,
-            onRequestNotificationPermission = onRequestNotificationPermission
+            onRequestNotificationPermission = onRequestNotificationPermission,
+            onRequestFullScreenIntent = onRequestFullScreenIntent
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ModeBadge()
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+    }
+    val timerCircle: @Composable () -> Unit = {
         TimerProgressCircle(
             status = status,
             preferences = preferences,
-            outerSize = 240.dp,
-            indicatorSize = 220.dp,
-            timeTextSize = 46.sp
+            outerSize = outerSize,
+            indicatorSize = indicatorSize,
+            timeTextSize = timeTextSize
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+    }
+    val controls: @Composable () -> Unit = {
         TimerActionControls(
             status = status,
             onStart = onStart,
             onPause = onPause,
             onResume = onResume,
+            onReset = onReset,
             onStop = onStop,
             onTriggerBreak = onTriggerBreak
         )
+    }
+
+    if (isLandscape) {
+        Row(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .defaultMinSize(minHeight = maxHeight)
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                ModeBadge()
+                Spacer(modifier = Modifier.height(12.dp))
+                timerCircle()
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1.2f)
+                    .padding(start = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                permissionGate()
+                Spacer(modifier = Modifier.height(12.dp))
+                controls()
+            }
+        }
+    } else {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .defaultMinSize(minHeight = maxHeight)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            permissionGate()
+            Spacer(modifier = Modifier.height(8.dp))
+            ModeBadge()
+            Spacer(modifier = Modifier.height(16.dp))
+            timerCircle()
+            Spacer(modifier = Modifier.height(16.dp))
+            controls()
+        }
     }
 }
 
@@ -270,7 +273,7 @@ private fun ModeBadge(modifier: Modifier = Modifier) {
             .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         Text(
-            text = "📱 Mobile Screen Guard Active",
+            text = stringResource(R.string.mode_badge),
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Medium
@@ -287,27 +290,34 @@ private fun TimerProgressCircle(
     timeTextSize: TextUnit,
     modifier: Modifier = Modifier
 ) {
+    val pausedText = stringResource(R.string.subtitle_paused)
+    val pausedScreenOffText = stringResource(R.string.subtitle_paused_screen_off)
     val (timeString, subtitleString, progress) = when (status) {
         is TimerStatus.Working -> {
             val formatted = NotificationHelper.formatTime(status.remainingSeconds)
-            val prog = (status.remainingSeconds.toFloat() / status.totalSeconds.coerceAtLeast(1).toFloat())
-            val sub = if (status.isScreenPaused) "Paused (Screen Off)" else "Working Session"
+            val prog = status.remainingSeconds.toFloat() / status.totalSeconds.coerceAtLeast(1).toFloat()
+            val sub = when (status.pauseReason) {
+                PauseReason.NONE -> stringResource(R.string.subtitle_working)
+                PauseReason.MANUAL -> pausedText
+                PauseReason.SCREEN_OFF -> pausedScreenOffText
+            }
             Triple(formatted, sub, prog)
         }
-        is TimerStatus.RestBreak -> {
-            val formatted = "${status.remainingSeconds}s"
-            val prog = (status.remainingSeconds.toFloat() / status.totalSeconds.coerceAtLeast(1).toFloat())
-            Triple(formatted, "Eye Rest Break", prog)
-        }
-        is TimerStatus.Snoozed -> {
-            val formatted = NotificationHelper.formatTime(status.remainingSeconds)
-            val prog = (status.remainingSeconds.toFloat() / status.totalSeconds.coerceAtLeast(1).toFloat())
-            Triple(formatted, "Break Snoozed", prog)
-        }
-        is TimerStatus.Idle -> {
-            val formatted = "${preferences.workDurationMinutes}:00"
-            Triple(formatted, "Ready to Start", 1f)
-        }
+        is TimerStatus.RestBreak -> Triple(
+            stringResource(R.string.rest_seconds_value, status.remainingSeconds),
+            stringResource(R.string.subtitle_break),
+            status.remainingSeconds.toFloat() / status.totalSeconds.coerceAtLeast(1).toFloat()
+        )
+        is TimerStatus.Snoozed -> Triple(
+            NotificationHelper.formatTime(status.remainingSeconds),
+            stringResource(R.string.subtitle_snoozed),
+            status.remainingSeconds.toFloat() / status.totalSeconds.coerceAtLeast(1).toFloat()
+        )
+        is TimerStatus.Idle -> Triple(
+            stringResource(R.string.idle_time_value, preferences.workDurationMinutes),
+            stringResource(R.string.subtitle_ready),
+            1f
+        )
     }
 
     Box(
@@ -327,7 +337,8 @@ private fun TimerProgressCircle(
                 text = timeString,
                 fontSize = timeTextSize,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -345,6 +356,7 @@ private fun TimerActionControls(
     onStart: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
+    onReset: () -> Unit,
     onStop: () -> Unit,
     onTriggerBreak: () -> Unit,
     modifier: Modifier = Modifier
@@ -366,15 +378,25 @@ private fun TimerActionControls(
                         .fillMaxWidth()
                         .height(54.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Start Session", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                    Text(
+                        text = stringResource(R.string.action_start_session),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
             is TimerStatus.Working -> {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (status.isScreenPaused) {
                         Button(
@@ -386,9 +408,17 @@ private fun TimerActionControls(
                             ),
                             modifier = Modifier.weight(1f).height(50.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Resume", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(R.string.action_resume),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     } else {
                         Button(
@@ -400,19 +430,46 @@ private fun TimerActionControls(
                             ),
                             modifier = Modifier.weight(1f).height(50.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.Pause, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(
+                                imageVector = Icons.Default.Pause,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Pause", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(R.string.action_pause),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
 
                     OutlinedButton(
                         onClick = onTriggerBreak,
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        ),
                         modifier = Modifier.weight(1f).height(50.dp)
                     ) {
-                        Text("Rest Now", fontWeight = FontWeight.SemiBold)
+                        Text(
+                            stringResource(R.string.action_take_break),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onReset,
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.cd_reset),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
 
                     IconButton(
@@ -422,7 +479,11 @@ private fun TimerActionControls(
                             .clip(RoundedCornerShape(14.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        Icon(imageVector = Icons.Default.Stop, contentDescription = "Stop", tint = Color(0xFFEF4444))
+                        Icon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = stringResource(R.string.cd_stop),
+                            tint = Color(0xFFEF4444)
+                        )
                     }
                 }
             }
@@ -433,7 +494,11 @@ private fun TimerActionControls(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                     modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
-                    Text("Stop Session", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(
+                        stringResource(R.string.action_stop_session),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
             }
         }

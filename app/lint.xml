@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- "20-20-20" is a fixed brand name here, not a numeric range. -->
+    <issue id="TypographyDashes" severity="ignore" />
+</lint>

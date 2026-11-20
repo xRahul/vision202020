@@ -7,7 +7,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -47,21 +49,32 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `in`.rahulja.vision202020.R
+import kotlinx.coroutines.withTimeoutOrNull
+
+/** Strict mode requires an actual two-second hold, not a platform long-press (~500 ms). */
+const val HOLD_TO_SKIP_MS = 2000L
 
 @Composable
 fun BreakScreenContent(
     remainingSeconds: Int,
-    totalSeconds: Int = 20,
-    strictMode: Boolean = false,
     onSkip: () -> Unit,
     onSnooze: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    totalSeconds: Int = 20,
+    strictMode: Boolean = false,
+    snoozeMinutes: Int = 5
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
     val scale by infiniteTransition.animateFloat(
@@ -105,6 +118,7 @@ fun BreakScreenContent(
                 progress = progress,
                 remainingSeconds = remainingSeconds,
                 strictMode = strictMode,
+                snoozeMinutes = snoozeMinutes,
                 isHoldingToSkip = isHoldingToSkip,
                 onHoldingChanged = { isHoldingToSkip = it },
                 onSkip = onSkip,
@@ -117,6 +131,7 @@ fun BreakScreenContent(
                 progress = progress,
                 remainingSeconds = remainingSeconds,
                 strictMode = strictMode,
+                snoozeMinutes = snoozeMinutes,
                 isHoldingToSkip = isHoldingToSkip,
                 onHoldingChanged = { isHoldingToSkip = it },
                 onSkip = onSkip,
@@ -133,6 +148,7 @@ private fun BreakScreenLandscapeContent(
     progress: Float,
     remainingSeconds: Int,
     strictMode: Boolean,
+    snoozeMinutes: Int,
     isHoldingToSkip: Boolean,
     onHoldingChanged: (Boolean) -> Unit,
     onSkip: () -> Unit,
@@ -149,7 +165,6 @@ private fun BreakScreenLandscapeContent(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left column: Guidance and Action Buttons
         Column(
             modifier = Modifier
                 .weight(1.1f)
@@ -164,12 +179,12 @@ private fun BreakScreenLandscapeContent(
                 Icon(
                     imageVector = Icons.Default.Visibility,
                     contentDescription = null,
-                    tint = Color(0xFF38BDF8),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Rest Your Eyes",
+                    text = stringResource(R.string.break_rest_eyes),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -179,7 +194,7 @@ private fun BreakScreenLandscapeContent(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Look at an object 20 feet (6m) away.\nBlink slowly and breathe deeply.",
+                text = stringResource(R.string.break_guidance),
                 fontSize = 13.sp,
                 color = Color(0xFF94A3B8),
                 textAlign = TextAlign.Center,
@@ -190,6 +205,7 @@ private fun BreakScreenLandscapeContent(
 
             BreakActionButtons(
                 strictMode = strictMode,
+                snoozeMinutes = snoozeMinutes,
                 isHoldingToSkip = isHoldingToSkip,
                 onHoldingChanged = onHoldingChanged,
                 onSkip = onSkip,
@@ -197,7 +213,6 @@ private fun BreakScreenLandscapeContent(
             )
         }
 
-        // Right column: Scaled Countdown Circle
         Column(
             modifier = Modifier
                 .weight(0.9f)
@@ -225,6 +240,7 @@ private fun BreakScreenPortraitContent(
     progress: Float,
     remainingSeconds: Int,
     strictMode: Boolean,
+    snoozeMinutes: Int,
     isHoldingToSkip: Boolean,
     onHoldingChanged: (Boolean) -> Unit,
     onSkip: () -> Unit,
@@ -244,14 +260,14 @@ private fun BreakScreenPortraitContent(
         Icon(
             imageVector = Icons.Default.Visibility,
             contentDescription = null,
-            tint = Color(0xFF38BDF8),
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(48.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Rest Your Eyes",
+            text = stringResource(R.string.break_rest_eyes),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White
@@ -260,7 +276,7 @@ private fun BreakScreenPortraitContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Look at an object 20 feet (6m) away.\nBlink slowly and breathe deeply.",
+            text = stringResource(R.string.break_guidance),
             fontSize = 16.sp,
             color = Color(0xFF94A3B8),
             textAlign = TextAlign.Center,
@@ -283,6 +299,7 @@ private fun BreakScreenPortraitContent(
 
         BreakActionButtons(
             strictMode = strictMode,
+            snoozeMinutes = snoozeMinutes,
             isHoldingToSkip = isHoldingToSkip,
             onHoldingChanged = onHoldingChanged,
             onSkip = onSkip,
@@ -306,7 +323,6 @@ private fun BreakCountdownCircle(
         contentAlignment = Alignment.Center,
         modifier = modifier.size(size)
     ) {
-        // Outer breathing pulsing halo
         Box(
             modifier = Modifier
                 .size(haloSize)
@@ -314,7 +330,7 @@ private fun BreakCountdownCircle(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFF38BDF8).copy(alpha = 0.25f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
                             Color.Transparent
                         )
                     ),
@@ -322,25 +338,24 @@ private fun BreakCountdownCircle(
                 )
         )
 
-        // Circular countdown progress
         CircularProgressIndicator(
             progress = { progress },
             modifier = Modifier.size(indicatorSize),
-            color = Color(0xFF38BDF8),
+            color = MaterialTheme.colorScheme.primary,
             trackColor = Color(0xFF334155),
             strokeWidth = 8.dp
         )
 
-        // Seconds remaining display
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "$remainingSeconds",
                 fontSize = numberTextSize,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.White
+                color = Color.White,
+                maxLines = 1
             )
             Text(
-                text = "seconds",
+                text = stringResource(R.string.break_seconds),
                 fontSize = 14.sp,
                 color = Color(0xFF64748B)
             )
@@ -351,6 +366,7 @@ private fun BreakCountdownCircle(
 @Composable
 private fun BreakActionButtons(
     strictMode: Boolean,
+    snoozeMinutes: Int,
     isHoldingToSkip: Boolean,
     onHoldingChanged: (Boolean) -> Unit,
     onSkip: () -> Unit,
@@ -359,6 +375,7 @@ private fun BreakActionButtons(
 ) {
     val currentOnSkip by rememberUpdatedState(onSkip)
     val currentOnHoldingChanged by rememberUpdatedState(onHoldingChanged)
+    val holdSkipLabel = stringResource(R.string.break_hold_skip)
 
     Row(
         modifier = modifier,
@@ -371,7 +388,10 @@ private fun BreakActionButtons(
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFCBD5E1)),
             modifier = Modifier.height(48.dp)
         ) {
-            Text(text = "Snooze 5m", fontSize = 14.sp)
+            Text(
+                text = stringResource(R.string.break_snooze, snoozeMinutes),
+                fontSize = 14.sp
+            )
         }
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -380,28 +400,36 @@ private fun BreakActionButtons(
             Box(
                 modifier = Modifier
                     .height(48.dp)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = holdSkipLabel
+                    }
                     .background(
                         color = if (isHoldingToSkip) Color(0xFFEF4444) else Color(0xFF334155),
                         shape = RoundedCornerShape(12.dp)
                     )
                     .pointerInput(Unit) {
-                        detectTapGestures(
-                            onPress = {
-                                currentOnHoldingChanged(true)
-                                val released = tryAwaitRelease()
-                                currentOnHoldingChanged(false)
-                            },
-                            onLongPress = {
-                                currentOnHoldingChanged(false)
-                                currentOnSkip()
+                        awaitEachGesture {
+                            awaitFirstDown()
+                            currentOnHoldingChanged(true)
+                            val released = withTimeoutOrNull(HOLD_TO_SKIP_MS) {
+                                waitForUpOrCancellation()
+                                true
                             }
-                        )
+                            currentOnHoldingChanged(false)
+                            // Timeout expired while still pressed: a real 2s hold.
+                            if (released == null) currentOnSkip()
+                        }
                     }
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (isHoldingToSkip) "Keep holding..." else "Hold 2s to Skip",
+                    text = if (isHoldingToSkip) {
+                        stringResource(R.string.break_keep_holding)
+                    } else {
+                        holdSkipLabel
+                    },
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
@@ -414,7 +442,11 @@ private fun BreakActionButtons(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
                 modifier = Modifier.height(48.dp)
             ) {
-                Text(text = "Skip Break", fontSize = 14.sp, color = Color.White)
+                Text(
+                    text = stringResource(R.string.break_skip),
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
             }
         }
     }
