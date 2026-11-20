@@ -9,7 +9,7 @@ WHY VISION 20-20-20 IS DIFFERENT
 • 20-Second Guided Relaxation: When rest time arrives, a calming dark breathing ring guides your eyes to relax, then automatically dismisses itself.
 • Screen-Aware Mobile Profile: The timer ticks ONLY while your screen is unlocked. When your screen turns off, the countdown pauses with zero CPU/battery drain.
 • Natural Break Auto-Reset: If you put your phone away for 5 or more minutes, the app recognizes you took a natural break and resets the 20-minute cycle automatically.
-• Desk & Laptop Companion Profile: Switch to continuous wall-clock mode to place your phone beside your monitor while you work.
+• Battery Reliability Settings: Opens the system battery-optimization screen so timers survive aggressive OEM power savers.
 • Battery-Efficient Themes: Includes pure OLED Black (turns off pixels on OLED screens), Dark Slate, and Light themes.
 • Quick Settings Tile & Glance Widget: Single-tap toggle directly from your notification shade or home screen.
 

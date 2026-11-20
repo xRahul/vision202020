@@ -20,7 +20,7 @@ Description: |-
   - Zero overlay clutter over your active apps during the 20-minute work session
   - 20-second calming guided breathing and eye rest overlay with auto-dismiss
   - Screen-aware mobile profile (pauses when phone is locked, natural break auto-reset)
-  - Desk companion profile (continuous wall-clock countdown for laptop reading)
+  - Clock-based countdown that stays accurate through Doze and process restarts
   - Lock-screen Google Clock-style alert delivery (setShowWhenLocked)
   - Quick Settings Tile and Jetpack Glance Home Screen Widget
   - 100% offline: android.permission.INTERNET is completely absent from the manifest
@@ -36,6 +36,8 @@ Builds:
     subdir: app
     gradle:
       - yes
+      - -PversionCode=30
+      - -PversionName=1.1.3
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags

@@ -1,14 +1,20 @@
 import java.io.File
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
 
+val versionProps = Properties().apply {
+    val file = rootProject.file("version.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
 fun getGitVersionCode(): Int {
-    val propCode = (project.findProperty("versionCode") as? String)?.toIntOrNull()
-        ?: System.getenv("VERSION_CODE")?.toIntOrNull()
-    if (propCode != null) return propCode
+    (project.findProperty("versionCode") as? String)?.toIntOrNull()?.let { return it }
+    System.getenv("VERSION_CODE")?.toIntOrNull()?.let { return it }
+    versionProps.getProperty("versionCode")?.toIntOrNull()?.let { return it }
 
     return try {
         val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
@@ -24,9 +30,9 @@ fun getGitVersionCode(): Int {
 }
 
 fun getGitVersionName(): String {
-    val propName = (project.findProperty("versionName") as? String)
-        ?: System.getenv("VERSION_NAME")
-    if (!propName.isNullOrBlank()) return propName
+    (project.findProperty("versionName") as? String)?.takeIf { it.isNotBlank() }?.let { return it }
+    System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() }?.let { return it }
+    versionProps.getProperty("versionName")?.takeIf { it.isNotBlank() }?.let { return it }
 
     return try {
         val process = ProcessBuilder("git", "describe", "--tags", "--always")
@@ -54,7 +60,7 @@ android {
     defaultConfig {
         applicationId = "in.rahulja.vision202020"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = computedVersionCode
         versionName = computedVersionName
 
@@ -62,26 +68,20 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            val keystorePath = System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE") as? String
-            val keystorePass = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String
-            val aliasName = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") as? String
-            val keyPass = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD") as? String
-
-            if (keystorePath != null && File(keystorePath).exists()) {
-                storeFile = File(keystorePath)
-                storePassword = keystorePass
-                keyAlias = aliasName
-                keyPassword = keyPass
-            } else {
-                // Fall back to debug keystore if custom release keystore not provided
-                val debugKeystore = File("${System.getProperty("user.home")}/.android/debug.keystore")
-                if (debugKeystore.exists()) {
-                    storeFile = debugKeystore
-                    storePassword = "android"
-                    keyAlias = "androiddebugkey"
-                    keyPassword = "android"
-                }
+        // Only register a release signing config when a real keystore is present.
+        // Without one the APK stays unsigned instead of being silently debug-signed.
+        val keystorePath = System.getenv("KEYSTORE_FILE")
+            ?: project.findProperty("KEYSTORE_FILE") as? String
+        val keystoreFile = keystorePath?.let { File(it) }?.takeIf { it.exists() }
+        if (keystoreFile != null) {
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                    ?: project.findProperty("KEYSTORE_PASSWORD") as? String
+                keyAlias = System.getenv("KEY_ALIAS")
+                    ?: project.findProperty("KEY_ALIAS") as? String
+                keyPassword = System.getenv("KEY_PASSWORD")
+                    ?: project.findProperty("KEY_PASSWORD") as? String
             }
         }
     }
@@ -92,8 +92,9 @@ android {
             versionNameSuffix = "-debug"
         }
         release {
-            isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

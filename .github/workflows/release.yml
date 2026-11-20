@@ -19,6 +19,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   build-and-release:
     name: Build & Publish Release APKs
@@ -65,9 +69,11 @@ jobs:
               python3 scripts/update_fdroid_metadata.py "$VERSION" "$VERSION_CODE" "$NEW_TAG"
             fi
 
+            printf 'versionCode=%s\nversionName=%s\n' "$VERSION_CODE" "$VERSION" > version.properties
+
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add metadata/in.rahulja.vision202020.yml
+            git add metadata/in.rahulja.vision202020.yml version.properties
             git commit -m "chore(release): bump version to $NEW_TAG [skip ci]" || true
             git push origin main
             sleep 2
@@ -77,7 +83,14 @@ jobs:
           else
             TAG_NAME="${GITHUB_REF#refs/tags/}"
             VERSION="${TAG_NAME#v}"
+            # Reuse the code pinned by the dispatch build for this tag; the git count is
+            # only a fallback for tags that predate version.properties.
+            PINNED_CODE=$(git show "$TAG_NAME:version.properties" 2>/dev/null | sed -n 's/^versionCode=//p' | tr -d '\r')
+            GIT_COUNT=$(git rev-list --count HEAD)
+            VERSION_CODE="${PINNED_CODE:-$((GIT_COUNT + 1))}"
           fi
+          echo "ORG_GRADLE_PROJECT_versionName=$VERSION" >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_versionCode=$VERSION_CODE" >> $GITHUB_ENV
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -114,21 +127,26 @@ jobs:
             echo "KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
             echo "KEY_PASSWORD=$KEY_PASSWORD" >> $GITHUB_ENV
           else
-            echo "Notice: Release keystore secrets not fully set. Generating CI self-signed release key..."
-            keytool -genkeypair -alias visionkey -keypass android -keystore /tmp/keystore/release.keystore -storepass android -dname "CN=Vision202020,O=Vision,C=US" -validity 10000 -keyalg RSA -keysize 2048
-            echo "KEYSTORE_FILE=/tmp/keystore/release.keystore" >> $GITHUB_ENV
-            echo "KEYSTORE_PASSWORD=android" >> $GITHUB_ENV
-            echo "KEY_ALIAS=visionkey" >> $GITHUB_ENV
-            echo "KEY_PASSWORD=android" >> $GITHUB_ENV
+            echo "ERROR: release keystore secrets are missing; refusing to publish an unsigned or self-signed release." >&2
+            exit 1
           fi
 
       - name: Build Debug & Release APKs
-        run: ./gradlew assembleDebug assembleRelease
+        run: ./gradlew assembleDebug assembleRelease lintDebug
+
+      - name: Verify Release APK Is Signed
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || { echo "ERROR: $APK missing (unsigned build?)"; exit 1; }
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK"
 
       - name: Prepare Release Artifacts
         run: |
           mkdir -p artifacts
           VERSION="${{ steps.versioning.outputs.version }}"
+          # Single universal APK per variant: no native libs or raster assets, so
+          # ABI/density splits would only duplicate identical files.
           cp app/build/outputs/apk/debug/app-debug.apk "artifacts/in.rahulja.vision202020-v${VERSION}-debug.apk"
           cp app/build/outputs/apk/release/app-release.apk "artifacts/in.rahulja.vision202020-v${VERSION}-release.apk"
           ls -la artifacts/

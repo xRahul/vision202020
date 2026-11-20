@@ -17,12 +17,10 @@ Extended screen time on phones and laptops drastically decreases natural blinkin
 ### Key Features
 - **Zero Screen Clutter During Work:** While your 20-minute timer counts down, **nothing floats over your apps**. No badges, no floating bubbles, no reading distractions.
 - **20-Second Guided Relaxation:** When the work timer completes, a soothing 20-second breathing overlay prompts you to look 20 feet away, blink gently, and relax your ciliary muscles before automatically dismissing itself.
-- **Dual Session Profiles:**
-  - **📱 Mobile Reading (Screen-Aware):** Ticks *only* while your screen is on. Pauses immediately when screen turns off. Auto-resets if your phone remains locked for ≥ 5 minutes (Natural Break).
-  - **💻 Laptop / Desk Companion:** Continuous wall-clock timer that sits on your desk, counting intervals independently of phone screen state.
+- **Screen-Aware Timer:** Ticks only while your screen is on. Pauses immediately when the screen turns off and auto-resets if your phone stays locked for ≥ 5 minutes (Natural Break).
 - **Lock-Screen Alert Delivery:** Wakes up your sleeping display with guided relaxation over keyguard Google Clock-alarm style (`setShowWhenLocked`).
 - **Quick Settings Tile:** One-tap toggle directly in your notification shade.
-- **Home Screen Widget:** Interactive Jetpack Glance widget showing live remaining time and play/pause controls.
+- **Home Screen Widget:** Interactive Jetpack Glance widget showing live remaining time with start/pause/resume controls.
 - **Notification-Only Mode:** Optional sound/vibration reminder for users who prefer zero visual blockers.
 - **100% Offline & Private:** Zero network permissions (`android.permission.INTERNET` is not included in the manifest). No tracking, no ads.
 
@@ -38,7 +36,7 @@ Extended screen time on phones and laptops drastically decreases natural blinkin
 
 ### Prerequisites
 - JDK 21+
-- Android SDK (API 34+)
+- Android SDK Platform 36 (compileSdk/targetSdk 36, minSdk 26)
 
 ```bash
 # Clone the repository
@@ -51,9 +49,15 @@ cd vision202020
 # Build debug APK
 ./gradlew assembleDebug
 
-# Build release APK
+# Build minified release APK
 ./gradlew assembleRelease
 ```
+
+Version code and name are read from `version.properties` (overridable with
+`-PversionCode=` / `-PversionName=`), so a shallow clone or source tarball still
+builds the correct identity. A release APK is only signed when a keystore is
+provided via `KEYSTORE_FILE`/`KEYSTORE_PASSWORD`/`KEY_ALIAS`/`KEY_PASSWORD`;
+otherwise Gradle emits an unsigned APK instead of silently using the debug key.
 
 The APKs will be located in:
 `app/build/outputs/apk/debug/` and `app/build/outputs/apk/release/`.

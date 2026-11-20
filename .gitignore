@@ -9,7 +9,13 @@ docs/superpowers/
 *.hprof
 *.keystore
 *.jks
+keystores/
 *.creds
 __pycache__/
 *.pyc
 .codegraph/
+.kotlin/
+tmp/
+.deja/
+artifacts/
+*.log
