@@ -21,6 +21,7 @@ interface PreferencesRepository {
     suspend fun updateWorkDuration(minutes: Int)
     suspend fun updateRestDuration(seconds: Int)
     suspend fun updateNaturalBreakMinutes(minutes: Int)
+    suspend fun updateSnoozeMinutes(minutes: Int)
     suspend fun updateEnforcementMode(mode: EnforcementMode)
     suspend fun updateStrictMode(enabled: Boolean)
     suspend fun updateSoundEnabled(enabled: Boolean)
@@ -37,6 +38,7 @@ class PreferencesRepositoryImpl(
         val WORK_DURATION_MINUTES = intPreferencesKey("work_duration_minutes")
         val REST_DURATION_SECONDS = intPreferencesKey("rest_duration_seconds")
         val NATURAL_BREAK_MINUTES = intPreferencesKey("natural_break_minutes")
+        val SNOOZE_MINUTES = intPreferencesKey("snooze_minutes")
         val ENFORCEMENT_MODE = stringPreferencesKey("enforcement_mode")
         val STRICT_MODE = booleanPreferencesKey("strict_mode")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
@@ -57,6 +59,7 @@ class PreferencesRepositoryImpl(
             val workMin = preferences[PreferencesKeys.WORK_DURATION_MINUTES] ?: 20
             val restSec = preferences[PreferencesKeys.REST_DURATION_SECONDS] ?: 20
             val naturalBreakMin = preferences[PreferencesKeys.NATURAL_BREAK_MINUTES] ?: 5
+            val snoozeMin = preferences[PreferencesKeys.SNOOZE_MINUTES] ?: 5
             val modeStr = preferences[PreferencesKeys.ENFORCEMENT_MODE] ?: EnforcementMode.BLOCKER_OVERLAY.name
             val strict = preferences[PreferencesKeys.STRICT_MODE] ?: false
             val sound = preferences[PreferencesKeys.SOUND_ENABLED] ?: true
@@ -80,6 +83,7 @@ class PreferencesRepositoryImpl(
                 workDurationMinutes = workMin,
                 restDurationSeconds = restSec,
                 naturalBreakMinutes = naturalBreakMin,
+                snoozeMinutes = snoozeMin,
                 enforcementMode = mode,
                 strictMode = strict,
                 soundEnabled = sound,
@@ -104,6 +108,12 @@ class PreferencesRepositoryImpl(
     override suspend fun updateNaturalBreakMinutes(minutes: Int) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.NATURAL_BREAK_MINUTES] = minutes
+        }
+    }
+
+    override suspend fun updateSnoozeMinutes(minutes: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SNOOZE_MINUTES] = minutes
         }
     }
 

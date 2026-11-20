@@ -35,10 +35,10 @@ class VisionTimerStateHolderTest {
     fun `state transitions update shared flow`() = runTest {
         val job = launch { VisionTimerStateHolder.state.collect { it } }
         VisionTimerStateHolder.setState(
-            TimerStatus.Working(remainingSeconds = 1200, elapsedSeconds = 0, totalSeconds = 1200, isScreenPaused = false)
+            TimerStatus.Working(remainingSeconds = 1200, elapsedSeconds = 0, totalSeconds = 1200)
         )
         assertEquals(
-            TimerStatus.Working(remainingSeconds = 1200, elapsedSeconds = 0, totalSeconds = 1200, isScreenPaused = false),
+            TimerStatus.Working(remainingSeconds = 1200, elapsedSeconds = 0, totalSeconds = 1200),
             VisionTimerStateHolder.state.value
         )
         job.cancel()
@@ -64,7 +64,7 @@ class VisionTimerStateHolderTest {
 
     @Test
     fun `state retains latest value`() = runTest {
-        val expected = TimerStatus.Working(remainingSeconds = 600, elapsedSeconds = 600, totalSeconds = 1200, isScreenPaused = false)
+        val expected = TimerStatus.Working(remainingSeconds = 600, elapsedSeconds = 600, totalSeconds = 1200)
         VisionTimerStateHolder.setState(expected)
         assertTrue(VisionTimerStateHolder.state.value is TimerStatus.Working)
         assertEquals(expected, VisionTimerStateHolder.state.value)
