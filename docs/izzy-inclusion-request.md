@@ -6,8 +6,8 @@ Status: ready to submit. No request has been opened yet.
 
 | Criterion | Current state |
 |---|---|
-| Tagged GitHub release | Yes, `v1.1.7` |
-| Release APK under 30 MB | Yes, 2,014,975 bytes |
+| Tagged GitHub release | Yes, `v1.1.8` |
+| Release APK under 30 MB | Yes, 2,126,241 bytes |
 | Release-signed, not debug-signed | Yes, `CN=Vision 20-20-20` |
 | Fastlane title, descriptions, icon, feature graphic | Present |
 | Fastlane changelog | `fastlane/metadata/android/en-US/changelogs/43.txt` |
