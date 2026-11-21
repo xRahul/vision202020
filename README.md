@@ -1,6 +1,8 @@
 # Vision 20-20-20 👁️
 
 [![CI](https://github.com/xRahul/vision202020/actions/workflows/ci.yml/badge.svg)](https://github.com/xRahul/vision202020/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/xRahul/vision202020/actions/workflows/codeql.yml/badge.svg)](https://github.com/xRahul/vision202020/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/xRahul/vision202020/badge)](https://securityscorecards.dev/viewer/?uri=github.com/xRahul/vision202020)
 [![Latest release](https://img.shields.io/github/v/release/xRahul/vision202020?label=release&color=blue)](https://github.com/xRahul/vision202020/releases/latest)
 [![Total downloads](https://img.shields.io/github/downloads/xRahul/vision202020/total?label=downloads&color=success)](https://github.com/xRahul/vision202020/releases)
 [![License: GPL-3.0](https://img.shields.io/github/license/xRahul/vision202020?color=orange)](LICENSE)
