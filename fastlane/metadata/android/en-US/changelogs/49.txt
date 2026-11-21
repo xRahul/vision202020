@@ -1,0 +1,5 @@
+- test: smoke-test the license screen activity
+- ci: fix hashed PyYAML install for store validation
+- chore: clear lint warning and pin store validation deps
+- ci: scope write permissions to jobs for Scorecard
+- chore: harden repo trust, release integrity, and store metadata
