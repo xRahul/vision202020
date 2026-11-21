@@ -72,6 +72,8 @@ Expected signing certificate SHA-256:
 
 Releases before v1.1.8 predate the checksum and attestation files. Their APKs are still signed with the same release key.
 
+The `.sha256.sigstore.json` bundle signs the checksum file, not the APK. Verify it with `cosign verify-blob` using the checksum as the input and the release workflow identity as the certificate identity.
+
 ---
 
 ## Privacy
@@ -79,6 +81,7 @@ Releases before v1.1.8 predate the checksum and attestation files. Their APKs ar
 - No `android.permission.INTERNET` permission.
 - No `android.permission.ACCESS_NETWORK_STATE` permission.
 - No ads, analytics, telemetry, or crash-reporting SDK.
+- A local crash log stays in app-private storage and is never uploaded.
 - All timer state, preferences, and session data stay on the device.
 
 Android Auto Backup is enabled (`android:allowBackup="true"`). Android may include app preferences in the device's encrypted cloud backup. The app itself never uploads anything. Disable device backup for this app in Android settings if you do not want that.
