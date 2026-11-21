@@ -1612,7 +1612,7 @@ Expected:
 
 ## OpenSSF Scorecard Improvement Plan (2026-11-21)
 
-Current live result: **6.2 / 10**. Use either API host; the viewer is the human-readable page.
+Current live result: **6.3 / 10**. Use either API host; the viewer is the human-readable page.
 
 - API: `https://api.securityscorecards.dev/projects/github.com/xRahul/vision202020` (alias: `https://api.scorecard.dev/projects/github.com/xRahul/vision202020`)
 - Viewer: `https://securityscorecards.dev/viewer/?uri=github.com/xRahul/vision202020`
@@ -1623,7 +1623,7 @@ Current live result: **6.2 / 10**. Use either API host; the viewer is the human-
 | Check | Score | Cause | Action |
 |---|---:|---|---|
 | Code-Review | 0 | 0/30 approved changesets | Blocked by solo maintainer; needs a trusted second reviewer |
-| CI-Tests | -1 | No pull request exists | Create one real PR; CI already runs on `pull_request` |
+| CI-Tests | 10 | 1/1 merged PRs checked | Done in PR #1 |
 | Packaging | -1 | No package-registry publish workflow | Not applicable to an Android APK; leave as N/A |
 | Maintained | 0 | Repo under 90 days old | Time-bound; re-evaluates automatically |
 | CII-Best-Practices | 0 | No OpenSSF badge | Apply for the self-certified badge |
@@ -1643,11 +1643,8 @@ Current live result: **6.2 / 10**. Use either API host; the viewer is the human-
 
 ### Actions in priority order
 
-1. **CI-Tests: one real pull request.**
-   - Make a small docs or test change on a branch.
-   - Open a PR against `main`.
-   - Confirm CI, CodeQL, and Dependency Review run on the PR.
-   - Merge it. This converts `-1` into a scored check without changing policy.
+1. **CI-Tests: done in PR #1.**
+   - PR #1 added this plan and passed CI, CodeQL, and Dependency Review.
 
 2. **CII-Best-Practices: obtain the badge.**
    - Create the project at `https://bestpractices.coreinfrastructure.org/en/projects/new`.
@@ -1685,7 +1682,7 @@ Current live result: **6.2 / 10**. Use either API host; the viewer is the human-
 
 ### Expected outcome
 
-- Realistic near-term: **7.0-7.5** after the PR, CII badge, and two more signed releases.
+- Realistic near-term: **7.0-7.5** after the CII badge and two more signed releases.
 - After five signed releases and a stronger branch ruleset: **8+**.
 - Remaining ceiling: Code-Review, Contributors, Packaging, and Fuzzing need people or infrastructure the project does not have.
 
