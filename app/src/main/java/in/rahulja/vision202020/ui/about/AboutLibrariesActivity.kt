@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
 import `in`.rahulja.vision202020.R
@@ -18,10 +18,9 @@ class AboutLibrariesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             VisionTheme {
-                val context = LocalContext.current
+                val resources = LocalResources.current
                 val librariesJson = remember {
-                    context.resources.openRawResource(R.raw.aboutlibraries)
-                        .use { it.readBytes() }
+                    resources.openRawResource(R.raw.aboutlibraries).use { it.readBytes() }
                 }
                 val libraries by produceLibraries(librariesJson)
                 LibrariesContainer(
