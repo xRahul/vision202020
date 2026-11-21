@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -51,5 +52,21 @@ class WidgetConfigurationTest {
         // Verify the initial layout can actually be inflated
         val view = LayoutInflater.from(context).inflate(initialLayoutResId, null)
         assertNotNull("Initial loading layout must inflate successfully", view)
+    }
+
+    @Test
+    fun testWorkManagerProguardRulesRetained() {
+        val rulesFile = java.io.File("proguard-rules.pro").takeIf { it.exists() }
+            ?: java.io.File("app/proguard-rules.pro")
+        assertTrue("proguard-rules.pro must exist", rulesFile.exists())
+        val content = rulesFile.readText()
+        assertTrue(
+            "Must keep androidx.work.InputMerger constructor to prevent R8 full-mode stripping",
+            content.contains("extends androidx.work.InputMerger") && content.contains("<init>();")
+        )
+        assertTrue(
+            "Must keep androidx.work.ListenableWorker constructor",
+            content.contains("extends androidx.work.ListenableWorker")
+        )
     }
 }
