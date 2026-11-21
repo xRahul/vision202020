@@ -24,6 +24,7 @@ TRANSPARENT PERMISSIONS BREAKDOWN
 • POST_NOTIFICATIONS: To display the ongoing countdown ticker and notify you when rest time begins.
 • FOREGROUND_SERVICE & FOREGROUND_SERVICE_SPECIAL_USE: Keeps timer tracking accurate without being killed by Android's background app optimizers.
 • SYSTEM_ALERT_WINDOW: (Optional) To display the 20-second calming rest overlay over active apps.
-• USE_FULL_SCREEN_INTENT & SCHEDULE_EXACT_ALARM: Wakes the display for eye rest Google Clock-alarm style even if your device is locked.
+• USE_FULL_SCREEN_INTENT: Wakes the display for eye rest Google Clock-alarm style even if your device is locked.
 • RECEIVE_BOOT_COMPLETED: Automatically resumes your eye rest timer after your phone reboots.
 • VIBRATE: Plays a subtle tactile cue when rest begins and ends.
+• WAKE_LOCK: Lets home-screen widget updates finish. The app does not acquire wake locks directly.
