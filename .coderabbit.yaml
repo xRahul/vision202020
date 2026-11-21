@@ -1,0 +1,29 @@
+language: en-US
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  path_filters:
+    - "!**/build/**"
+    - "!**/.gradle/**"
+    - "!docs/superpowers/**"
+    - "!tmp/**"
+  path_instructions:
+    - path: "app/src/main/java/**"
+      instructions: |
+        Check for Android lifecycle leaks, coroutine scope misuse, missing
+        null checks, and resource cleanup. Flag any new network permission,
+        analytics SDK, or telemetry.
+    - path: "app/src/test/**"
+      instructions: |
+        Prefer deterministic tests. Flag sleeps, real network, and tests that
+        depend on wall-clock time without a fake clock.
+    - path: ".github/workflows/**"
+      instructions: |
+        Check permissions are least-privilege, actions are SHA-pinned, jobs
+        have timeouts, and no secrets are printed.
+chat:
+  auto_reply: true

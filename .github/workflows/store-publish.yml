@@ -1,4 +1,4 @@
-name: Store Release Validation & Sync (IzzyOnDroid & F-Droid)
+name: Store Metadata Validation
 
 on:
   release:
@@ -8,25 +8,29 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: store-metadata
+  cancel-in-progress: true
+
 jobs:
-  verify-and-sync:
-    name: Verify Store Compliance & Release Sync
+  validate:
+    name: Validate Fastlane and F-Droid metadata
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.x'
 
       - name: Install PyYAML
         run: pip install pyyaml
 
-      - name: Validate Fastlane Store Metadata
-        id: fastlane-check
+      - name: Validate Fastlane Metadata
         run: |
           echo "=== Checking Fastlane Metadata ==="
           test -f fastlane/metadata/android/en-US/title.txt || (echo "Missing title.txt" && exit 1)
@@ -38,49 +42,72 @@ jobs:
           SHORT_LEN=$(wc -m < fastlane/metadata/android/en-US/short_description.txt | tr -d ' ')
           echo "Short description length: $SHORT_LEN characters"
           if [ "$SHORT_LEN" -gt 80 ]; then
-            echo "Error: short_description.txt exceeds 80 characters limit (Current: $SHORT_LEN)"
+            echo "Error: short_description.txt exceeds 80 characters (current: $SHORT_LEN)"
             exit 1
           fi
-          echo "Fastlane structure verified successfully."
 
-      - name: Validate F-Droid YAML Recipe
-        id: fdroid-check
+          echo "Fastlane structure verified."
+
+      - name: Validate F-Droid Recipe
         run: |
           echo "=== Checking F-Droid Metadata Recipe ==="
-          python3 - <<EOF
+          python3 - <<'PY'
+          import re
+          import sys
           import yaml
-          with open('metadata/in.rahulja.vision202020.yml', 'r') as f:
-              data = yaml.safe_load(f)
-          
-          required = ['Categories', 'License', 'AuthorName', 'SourceCode', 'AutoName', 'Summary', 'Description', 'RepoType', 'Repo', 'Builds', 'CurrentVersion', 'CurrentVersionCode']
-          for req in required:
-              assert req in data, f"Missing required F-Droid metadata key: {req}"
-          
-          assert data['License'] == 'GPL-3.0-or-later', f"Unexpected License: {data['License']}"
-          assert len(data['Builds']) > 0, "Builds list cannot be empty"
-          print(f"Validated F-Droid Recipe: {data['AutoName']} v{data['CurrentVersion']} (code: {data['CurrentVersionCode']})")
-          EOF
 
-      - name: Publish Store Verification Summary
+          path = "metadata/in.rahulja.vision202020.yml"
+          with open(path, "r", encoding="utf-8") as handle:
+              data = yaml.safe_load(handle)
+
+          valid_categories = {"Digital Wellbeing", "Timer", "Time Tracker"}
+          categories = set(data.get("Categories", []))
+          assert categories <= valid_categories, f"Invalid categories: {categories - valid_categories}"
+          assert categories, "Categories must not be empty"
+
+          assert data.get("License") == "GPL-3.0-or-later"
+          assert data.get("AuthorName")
+          assert data.get("SourceCode")
+          assert data.get("AutoName")
+          assert data.get("RepoType") == "git"
+          assert data.get("AutoUpdateMode") == "Version"
+          assert str(data.get("UpdateCheckMode", "")).startswith("Tags")
+          assert data.get("UpdateCheckData", "").startswith("version.properties|versionCode=")
+
+          builds = data.get("Builds", [])
+          assert len(builds) == 1, "Only the latest build should be listed"
+          build = builds[0]
+          assert re.fullmatch(r"[0-9a-f]{40}", str(build.get("commit", ""))), "commit must be a full 40-char hash"
+          assert build.get("subdir") == "app"
+
+          current_version = str(data.get("CurrentVersion"))
+          current_code = str(data.get("CurrentVersionCode"))
+          assert build.get("versionName") == current_version
+          assert str(build.get("versionCode")) == current_code
+
+          assert "Summary" not in data, "Summary belongs in Fastlane"
+          assert "Description" not in data, "Description belongs in Fastlane"
+
+          print(f"Validated {data['AutoName']} v{current_version} (code: {current_code})")
+          PY
+
+      - name: Check Store Listings
         run: |
-          cat <<EOF >> $GITHUB_STEP_SUMMARY
-          ## 📦 Multi-Store Release Verification Report
+          for url in \
+            "https://f-droid.org/packages/in.rahulja.vision202020/" \
+            "https://apt.izzysoft.de/fdroid/index/apk/in.rahulja.vision202020"; do
+            status=$(curl -sL -o /dev/null -w '%{http_code}' --max-time 20 "$url")
+            echo "$url -> $status"
+          done
 
-          ### ✅ Fastlane Store Assets
-          - **Title:** $(cat fastlane/metadata/android/en-US/title.txt)
-          - **Short Description:** Verified (≤ 80 chars)
-          - **Icon:** 512x512 PNG present
-          - **Feature Graphic:** 1024x500 PNG present
+      - name: Publish Validation Summary
+        run: |
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ## Store metadata validation
 
-          ### 🤖 IzzyOnDroid Compatibility
-          - **Status:** **Ready for Automated Crawl Ingestion**
-          - **Asset Pattern:** \`in.rahulja.vision202020-v*-release.apk\`
-          - **Zero Trackers:** Verified (no network permissions or proprietary trackers)
-          - **Initial Inclusion Request:** Open issue at [IzzyOnDroid GitLab Repo](https://gitlab.com/IzzyOnDroid/repo/-/issues/new)
-
-          ### 🛡️ F-Droid Official Inclusion
-          - **Recipe File:** \`metadata/in.rahulja.vision202020.yml\`
-          - **License:** \`GPL-3.0-or-later\`
-          - **Auto-Update Mode:** \`Version v%v\`
-          - **Next Step:** Submit Merge Request targeting [fdroid/fdroiddata:master](https://gitlab.com/fdroid/fdroiddata)
+          - Fastlane title, short description, full description, icon, and feature graphic are present.
+          - F-Droid recipe uses valid categories, a full commit hash, tag-based auto-update, and Fastlane-owned copy.
+          - This workflow validates files only. Store submission is manual.
+          - F-Droid requires 3 months of active development; earliest normal submission is 2027-02-17.
+          - IzzyOnDroid requires a tagged, release-signed APK under 30 MB and a Fastlane listing.
           EOF

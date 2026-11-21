@@ -1,0 +1,4 @@
+- Fixed the home-screen widget failing to load after being added.
+- Restored widget refresh after minification.
+- Improved widget background, corners, and launcher loading state.
+- Kept the 20-20-20 timer, overlay, and privacy behavior unchanged.

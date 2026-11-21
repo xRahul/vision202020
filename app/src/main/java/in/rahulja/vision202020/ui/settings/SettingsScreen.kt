@@ -47,6 +47,7 @@ import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.data.AppThemeMode
 import `in`.rahulja.vision202020.data.EnforcementMode
 import `in`.rahulja.vision202020.data.UserPreferences
+import `in`.rahulja.vision202020.ui.about.AboutLibrariesActivity
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -332,6 +333,30 @@ fun SettingsScreen(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(
+                            onClick = { uriHandler.openUri("https://github.com/xRahul/vision202020/releases/latest") }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.about_updates),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 13.sp
+                            )
+                        }
+                        TextButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(context, AboutLibrariesActivity::class.java)
+                                )
+                            }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.about_licenses),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                 }
             }

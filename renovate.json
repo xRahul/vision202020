@@ -1,0 +1,41 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "Asia/Kolkata",
+  "schedule": ["before 6am on monday"],
+  "packageRules": [
+    {
+      "groupName": "AndroidX",
+      "matchPackageNames": ["/^androidx\\./"]
+    },
+    {
+      "groupName": "Kotlin, Compose, AGP",
+      "matchPackageNames": ["/^org\\.jetbrains\\.kotlin/", "/^com\\.android\\./"]
+    },
+    {
+      "groupName": "Testing",
+      "matchPackageNames": [
+        "/^junit/",
+        "/^io\\.mockk/",
+        "/^org\\.robolectric/",
+        "/^androidx\\.test/"
+      ]
+    },
+    {
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"]
+    },
+    {
+      "matchPackageNames": [
+        "/^com\\.mikepenz:aboutlibraries/",
+        "com.mikepenz.aboutlibraries.plugin"
+      ],
+      "allowedVersions": "<15",
+      "description": "AboutLibraries 15 requires compileSdk 37; stay on 14.x until the app targets SDK 37."
+    }
+  ]
+}

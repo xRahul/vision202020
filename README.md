@@ -1,7 +1,10 @@
 # Vision 20-20-20 👁️
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Platform: Android](https://img.shields.io/badge/Platform-Android%208.0%2B-green.svg)](app/build.gradle.kts)
+[![CI](https://github.com/xRahul/vision202020/actions/workflows/ci.yml/badge.svg)](https://github.com/xRahul/vision202020/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/xRahul/vision202020?label=release&color=blue)](https://github.com/xRahul/vision202020/releases/latest)
+[![Total downloads](https://img.shields.io/github/downloads/xRahul/vision202020/total?label=downloads&color=success)](https://github.com/xRahul/vision202020/releases)
+[![License: GPL-3.0](https://img.shields.io/github/license/xRahul/vision202020?color=orange)](LICENSE)
+[![API](https://img.shields.io/badge/API-26%2B-brightgreen.svg)](https://developer.android.com/about/versions/oreo)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.x-purple.svg)](gradle/libs.versions.toml)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4.svg)](app/build.gradle.kts)
 
@@ -38,7 +41,59 @@ Extended screen time on phones and laptops drastically decreases natural blinkin
 
 ## Downloads & Installation
 
-- **GitHub Releases:** Download pre-built release APKs from [Releases](https://github.com/xRahul/vision202020/releases).
+- **GitHub Releases (recommended):** Download the latest signed release APK from [Releases](https://github.com/xRahul/vision202020/releases/latest).
+- **RSS feed:** [releases.atom](https://github.com/xRahul/vision202020/releases.atom)
+- **Obtainium:** [add this repository](obtainium://add/https://github.com/xRahul/vision202020) to receive updates directly from GitHub Releases.
+
+F-Droid and IzzyOnDroid listings are not advertised yet. Their badges appear only after the package pages return HTTP 200.
+
+### Verify the APK
+
+Each release from v1.1.8 onward includes a `.sha256` checksum, a CycloneDX `bom.json` SBOM, and a GitHub build-provenance attestation.
+
+```bash
+# 1. Check the file digest
+sha256sum -c in.rahulja.vision202020-vX.Y.Z-release.apk.sha256
+
+# 2. Verify GitHub built this APK from this repository
+gh attestation verify in.rahulja.vision202020-vX.Y.Z-release.apk -R xRahul/vision202020
+
+# 3. Check the signing certificate
+apksigner verify --print-certs in.rahulja.vision202020-vX.Y.Z-release.apk
+```
+
+Expected signing certificate SHA-256:
+
+```text
+9ec14141874c3a8f2e3843f52582c311880fe5417eb6f097fdf8515db92f2511
+```
+
+Releases before v1.1.8 predate the checksum and attestation files. Their APKs are still signed with the same release key.
+
+---
+
+## Privacy
+
+- No `android.permission.INTERNET` permission.
+- No `android.permission.ACCESS_NETWORK_STATE` permission.
+- No ads, analytics, telemetry, or crash-reporting SDK.
+- All timer state, preferences, and session data stay on the device.
+
+Android Auto Backup is enabled (`android:allowBackup="true"`). Android may include app preferences in the device's encrypted cloud backup. The app itself never uploads anything. Disable device backup for this app in Android settings if you do not want that.
+
+### Permissions
+
+| Permission | Why it is used |
+|---|---|
+| `FOREGROUND_SERVICE` | Keeps the interval timer running while you use other apps. |
+| `FOREGROUND_SERVICE_SPECIAL_USE` | Declares the timer's special-use foreground service type on Android 14+. |
+| `SYSTEM_ALERT_WINDOW` | Draws the 20-second eye-rest overlay above other apps. |
+| `POST_NOTIFICATIONS` | Shows the timer notification and break prompts on Android 13+. |
+| `USE_FULL_SCREEN_INTENT` | Delivers the lock-screen break alert like an alarm. |
+| `RECEIVE_BOOT_COMPLETED` | Restores the timer after a device reboot. |
+| `VIBRATE` | Optional vibration reminder. |
+| `WAKE_LOCK` | Added by Glance's WorkManager dependency so home-screen widget updates can finish. The app does not acquire wake locks directly. |
+| `in.rahulja.vision202020.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | App-internal permission for non-exported dynamic receivers. |
 
 ---
 
@@ -77,3 +132,7 @@ The APKs will be located in:
 ## License
 
 Vision 20-20-20 is free and open-source software licensed under the **GNU General Public License v3.0** (`GPL-3.0-or-later`). See [LICENSE](LICENSE) for details.
+
+## Security
+
+Report vulnerabilities privately through [GitHub Security Advisories](https://github.com/xRahul/vision202020/security/advisories/new). See [SECURITY.md](SECURITY.md).

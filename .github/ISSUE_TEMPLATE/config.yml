@@ -1,0 +1,11 @@
+---
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/xRahul/vision202020/discussions
+    about: >-
+      Ask usage questions, share setups, or discuss an idea
+      before filing an issue.
+  - name: Security vulnerability
+    url: https://github.com/xRahul/vision202020/security/advisories/new
+    about: Report privately. Do not open a public issue.

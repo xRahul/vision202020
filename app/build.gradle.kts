@@ -4,6 +4,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.cyclonedx.bom)
+    alias(libs.plugins.aboutlibraries)
 }
 
 val versionProps = Properties().apply {
@@ -111,6 +113,10 @@ android {
         compose = true
     }
 
+    lint {
+        sarifReport = true
+    }
+
     testOptions {
         unitTests {
             isReturnDefaultValues = true
@@ -147,6 +153,7 @@ dependencies {
     implementation(libs.androidx.glance.material3)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.aboutlibraries.compose.m3)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

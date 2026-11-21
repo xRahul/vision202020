@@ -85,6 +85,8 @@
     <string name="about_author">Author: Rahul Jain</string>
     <string name="about_license">License: GNU General Public License v3.0 (GPL-3.0-or-later)</string>
     <string name="about_source">Source Code on GitHub</string>
+    <string name="about_updates">Check for updates</string>
+    <string name="about_licenses">Third-party licenses</string>
 
     <!-- Permission cards -->
     <string name="permission_notification_title">Notification Permission Needed</string>

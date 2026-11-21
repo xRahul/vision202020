@@ -1,6 +1,7 @@
 package `in`.rahulja.vision202020
 
 import android.app.Application
+import `in`.rahulja.vision202020.crash.CrashLogWriter
 import `in`.rahulja.vision202020.service.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +17,7 @@ class VisionApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CrashLogWriter.install(this)
         NotificationHelper(this).createChannels()
     }
 }

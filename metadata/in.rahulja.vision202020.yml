@@ -1,45 +1,26 @@
 Categories:
-  - Health & Fitness
-  - Time
+  - Digital Wellbeing
+  - Timer
 License: GPL-3.0-or-later
 AuthorName: Rahul Jain
 AuthorWebSite: https://github.com/xRahul
 SourceCode: https://github.com/xRahul/vision202020
 IssueTracker: https://github.com/xRahul/vision202020/issues
-
 AutoName: Vision 20-20-20
-Summary: Prevent digital eye strain with the 20-20-20 rule. 100% offline.
-Description: |-
-  Extended screen reading reduces natural blink rates by over 60%, breaking the tear film
-  and causing ciliary muscle accommodation spasms (Digital Eye Strain).
-
-  Vision 20-20-20 helps you adhere to the ophthalmologist-backed 20-20-20 rule:
-  Every 20 minutes of screen work, look at an object 20 feet away for 20 seconds.
-
-  Features:
-  - Zero overlay clutter over your active apps during the 20-minute work session
-  - 20-second calming guided breathing and eye rest overlay with auto-dismiss
-  - Screen-aware mobile profile (pauses when phone is locked, natural break auto-reset)
-  - Clock-based countdown that stays accurate through Doze and process restarts
-  - Lock-screen Google Clock-style alert delivery (setShowWhenLocked)
-  - Quick Settings Tile and Jetpack Glance Home Screen Widget
-  - 100% offline: android.permission.INTERNET is completely absent from the manifest
-  - Free & Open Source Software under GNU General Public License v3.0
-
 RepoType: git
 Repo: https://github.com/xRahul/vision202020.git
-
 Builds:
   - versionName: 1.1.7
     versionCode: 43
-    commit: v1.1.7
+    commit: 3e1576c44670e90889738b05eb9076c10a7bdd0b
     subdir: app
     gradle:
       - yes
       - -PversionCode=43
       - -PversionName=1.1.7
 
-AutoUpdateMode: Version v%v
-UpdateCheckMode: Tags
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
+UpdateCheckData: version.properties|versionCode=(\d+)|.|versionName=(.+)
 CurrentVersion: 1.1.7
 CurrentVersionCode: 43
