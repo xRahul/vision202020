@@ -8,4 +8,6 @@
     android:targetCellHeight="1"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:description="@string/widget_description"
     android:widgetCategory="home_screen" />

@@ -11,6 +11,8 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -70,6 +72,9 @@ class VisionGlanceWidget : GlanceAppWidget() {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
+                        .appWidgetBackground()
+                        .background(GlanceTheme.colors.widgetBackground)
+                        .cornerRadius(16.dp)
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalAlignment = Alignment.CenterHorizontally
