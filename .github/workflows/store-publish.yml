@@ -29,9 +29,9 @@ jobs:
 
       - name: Install PyYAML
         run: |
-          pip install --require-hashes \
-            pyyaml==6.0.4 \
-            --hash=sha256:93bfb2459195406a518e2f487a9bbf01df240175f31e06f5a252ac6734c7bbf0
+          printf 'pyyaml==6.0.4 --hash=sha256:93bfb2459195406a518e2f487a9bbf01df240175f31e06f5a252ac6734c7bbf0\n' \
+            > /tmp/requirements.txt
+          pip install --require-hashes -r /tmp/requirements.txt
 
       - name: Validate Fastlane Metadata
         run: |
