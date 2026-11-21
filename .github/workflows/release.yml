@@ -235,8 +235,11 @@ jobs:
 
       - name: Publish Attestation Bundle
         run: |
-          cp "${{ steps.attest.outputs.bundle-path }}" \
-            "artifacts/in.rahulja.vision202020-v${{ steps.versioning.outputs.version }}-release.apk.attestation.sigstore.json"
+          BASE="artifacts/in.rahulja.vision202020-v${{ steps.versioning.outputs.version }}-release.apk"
+          cp "${{ steps.attest.outputs.bundle-path }}" "${BASE}.attestation.sigstore.json"
+          jq -r '.dsseEnvelope.payload' "${BASE}.attestation.sigstore.json" \
+            | base64 -d \
+            | jq -c . > "${BASE}.intoto.jsonl"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
@@ -251,3 +254,4 @@ jobs:
             artifacts/*-release.apk.sha256
             artifacts/*-bom.json
             artifacts/*.sigstore.json
+            artifacts/*.intoto.jsonl
