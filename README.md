@@ -141,3 +141,5 @@ Vision 20-20-20 is free and open-source software licensed under the **GNU Genera
 ## Security
 
 Report vulnerabilities privately through [GitHub Security Advisories](https://github.com/xRahul/vision202020/security/advisories/new). See [SECURITY.md](SECURITY.md).
+
+Project health is tracked by [OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/xRahul/vision202020). Dependencies are updated by Renovate, code is scanned by CodeQL, and every GitHub Action is pinned to a full commit SHA.
