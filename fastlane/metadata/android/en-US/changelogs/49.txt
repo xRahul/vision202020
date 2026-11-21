@@ -1,5 +1,3 @@
-- test: smoke-test the license screen activity
-- ci: fix hashed PyYAML install for store validation
-- chore: clear lint warning and pin store validation deps
-- ci: scope write permissions to jobs for Scorecard
-- chore: harden repo trust, release integrity, and store metadata
+- Added a third-party licenses screen.
+- Added a local crash log to help diagnose problems without any network access.
+- Added a direct link to check for updates on GitHub Releases.
