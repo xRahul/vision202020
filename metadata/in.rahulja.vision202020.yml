@@ -10,17 +10,17 @@ AutoName: Vision 20-20-20
 RepoType: git
 Repo: https://github.com/xRahul/vision202020.git
 Builds:
-  - versionName: 1.1.7
-    versionCode: 43
-    commit: 3e1576c44670e90889738b05eb9076c10a7bdd0b
+  - versionName: 1.1.8
+    versionCode: 49
+    commit: 106b47335f573c6974ef018211dc2bb9befd6648
     subdir: app
     gradle:
       - yes
-      - -PversionCode=43
-      - -PversionName=1.1.7
+      - -PversionCode=49
+      - -PversionName=1.1.8
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
 UpdateCheckData: version.properties|versionCode=(\d+)|.|versionName=(.+)
-CurrentVersion: 1.1.7
-CurrentVersionCode: 43
+CurrentVersion: 1.1.8
+CurrentVersionCode: 49
