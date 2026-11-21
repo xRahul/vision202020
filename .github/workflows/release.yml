@@ -228,9 +228,15 @@ jobs:
           ls -la
 
       - name: Attest Release APK
+        id: attest
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
           subject-path: artifacts/in.rahulja.vision202020-v${{ steps.versioning.outputs.version }}-release.apk
+
+      - name: Publish Attestation Bundle
+        run: |
+          cp "${{ steps.attest.outputs.bundle-path }}" \
+            "artifacts/in.rahulja.vision202020-v${{ steps.versioning.outputs.version }}-release.apk.intoto.jsonl"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
@@ -245,3 +251,4 @@ jobs:
             artifacts/*-release.apk.sha256
             artifacts/*-bom.json
             artifacts/*.sigstore.json
+            artifacts/*.intoto.jsonl
