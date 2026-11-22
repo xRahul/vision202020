@@ -4,18 +4,20 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
+import `in`.rahulja.vision202020.data.SessionStore
 import `in`.rahulja.vision202020.data.dataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.cancel
 
 class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        val action = intent.action
+        if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) return
 
         // goAsync() keeps the process alive until the preference read completes.
         val pendingResult = goAsync()
@@ -24,8 +26,18 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 val repository = PreferencesRepositoryImpl(context.applicationContext.dataStore)
                 val prefs = repository.preferencesFlow.first()
-                if (prefs.startOnBoot) {
-                    VisionTimerService.start(context)
+                if (action == Intent.ACTION_BOOT_COMPLETED) {
+                    if (prefs.startOnBoot) {
+                        VisionTimerService.start(context)
+                    }
+                } else if (action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+                    val sessionStore = SessionStore(context.applicationContext.dataStore)
+                    val snapshot = runCatching { sessionStore.load() }.getOrNull()
+                    if (snapshot?.isResumable == true) {
+                        VisionTimerService.restore(context)
+                    } else if (prefs.startOnBoot) {
+                        VisionTimerService.start(context)
+                    }
                 }
             } finally {
                 pendingResult.finish()

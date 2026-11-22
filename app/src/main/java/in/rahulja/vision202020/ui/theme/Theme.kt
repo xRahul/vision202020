@@ -8,9 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.glance.material3.ColorProviders
 import `in`.rahulja.vision202020.data.AppThemeMode
 
-private val LightColorScheme = lightColorScheme(
+internal val LightColorScheme = lightColorScheme(
     primary = SkyBlueDark,
     onPrimary = LightSurface,
     background = LightBackground,
@@ -22,7 +23,7 @@ private val LightColorScheme = lightColorScheme(
     outline = LightOutline
 )
 
-private val DarkColorScheme = darkColorScheme(
+internal val DarkColorScheme = darkColorScheme(
     primary = SkyBluePrimary,
     onPrimary = DarkBackground,
     background = DarkBackground,
@@ -44,6 +45,11 @@ private val OledColorScheme = darkColorScheme(
     surfaceVariant = OledSurfaceVariant,
     onSurfaceVariant = OledOnSurfaceVariant,
     outline = OledOutline
+)
+
+val VisionGlanceColorProviders = ColorProviders(
+    light = LightColorScheme,
+    dark = DarkColorScheme
 )
 
 @Composable

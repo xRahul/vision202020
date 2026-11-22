@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -18,6 +19,7 @@ import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.SessionStore
 import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.data.dataStore
+import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.SessionSnapshot
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.domain.VisionTimerEngine
@@ -94,6 +96,7 @@ class VisionTimerService : Service() {
             }
         )
         screenReceiver.register(this)
+        syncInteractiveState()
 
         serviceScope.launch {
             repo.preferencesFlow.collect { prefs ->
@@ -140,12 +143,15 @@ class VisionTimerService : Service() {
             // OS restarted a sticky service. restoreSessionIfNeeded() decides to resume or stop.
             return Service.START_STICKY
         }
-        explicitCommandReceived = true
+        if (action != ACTION_RESTORE) {
+            explicitCommandReceived = true
+        }
         sessionStopped = false
         // Every path must post a foreground notification promptly (startForegroundService contract).
         startForegroundServiceWithNotification()
 
         when (action) {
+            ACTION_RESTORE -> restoreSessionIfNeeded()
             ACTION_START -> startTimer()
             ACTION_PAUSE -> engine.pause()
             ACTION_RESUME -> engine.resume()
@@ -172,7 +178,8 @@ class VisionTimerService : Service() {
     private fun startTimer() {
         sessionStopped = false
         engine.start()
-        startTicker()
+        syncInteractiveState()
+        startTickerIfRunning()
         handleStateChange(engine.state.value)
     }
 
@@ -233,6 +240,24 @@ class VisionTimerService : Service() {
         }
     }
 
+    private fun syncInteractiveState() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val isInteractive = powerManager?.isInteractive ?: true
+        if (!isInteractive) {
+            engine.onScreenOff()
+            overlayManager.dismissOverlay()
+            stopTicker()
+        } else {
+            val current = engine.state.value
+            if (current is TimerStatus.Working && current.pauseReason == PauseReason.SCREEN_OFF) {
+                engine.onScreenOn()
+                if (engine.isSessionActive) {
+                    startTickerIfRunning()
+                }
+            }
+        }
+    }
+
     private fun restoreSessionIfNeeded() {
         serviceScope.launch {
             val snapshot = runCatching { sessionStore.load() }.getOrNull()
@@ -241,11 +266,12 @@ class VisionTimerService : Service() {
                 stopSelf()
                 return@launch
             }
-            startForegroundServiceWithNotification()
             engine.restore(snapshot)
             currentPrefs = runCatching { PreferencesRepositoryImpl(applicationContext.dataStore).preferencesFlow.first() }
                 .getOrDefault(currentPrefs)
             engine.updatePreferences(currentPrefs)
+            syncInteractiveState()
+            startForegroundServiceWithNotification()
             startTickerIfRunning()
             handleStateChange(engine.state.value)
         }
@@ -327,10 +353,15 @@ class VisionTimerService : Service() {
             }
         }
 
+        val isStatusClassChanged = previousStatus?.javaClass != status.javaClass
+        val isScreenPausedChanged = (previousStatus as? TimerStatus.Working)?.isScreenPaused !=
+            (status as? TimerStatus.Working)?.isScreenPaused
+        val isForce = status is TimerStatus.Idle || isStatusClassChanged || isScreenPausedChanged
+
         previousStatus = status
 
-        // Idle is terminal: never throttle it or the widget can stay stale forever.
-        updateWidget(force = status is TimerStatus.Idle)
+        // Idle or state transition: never throttle or the widget can stay stale forever.
+        updateWidget(force = isForce)
     }
 
     private fun updateWidget(force: Boolean) {
@@ -360,6 +391,7 @@ class VisionTimerService : Service() {
 
     companion object {
         const val ACTION_START = "in.rahulja.vision202020.action.START"
+        const val ACTION_RESTORE = "in.rahulja.vision202020.action.RESTORE"
         const val ACTION_PAUSE = "in.rahulja.vision202020.action.PAUSE"
         const val ACTION_RESUME = "in.rahulja.vision202020.action.RESUME"
         const val ACTION_RESET = "in.rahulja.vision202020.action.RESET"
@@ -373,6 +405,8 @@ class VisionTimerService : Service() {
         val timerStatus: StateFlow<TimerStatus> = VisionTimerStateHolder.state
 
         fun start(context: Context) = send(context, ACTION_START)
+
+        fun restore(context: Context) = send(context, ACTION_RESTORE)
 
         fun pause(context: Context) = send(context, ACTION_PAUSE)
 

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.view.LayoutInflater
 import androidx.test.core.app.ApplicationProvider
+import `in`.rahulja.vision202020.ui.theme.VisionGlanceColorProviders
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -68,5 +69,10 @@ class WidgetConfigurationTest {
             "Must keep androidx.work.ListenableWorker constructor",
             content.contains("extends androidx.work.ListenableWorker")
         )
+    }
+
+    @Test
+    fun testVisionGlanceColorProvidersConfigured() {
+        assertNotNull(VisionGlanceColorProviders)
     }
 }

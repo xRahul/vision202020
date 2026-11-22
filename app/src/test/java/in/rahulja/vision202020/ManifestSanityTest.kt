@@ -2,13 +2,16 @@ package `in`.rahulja.vision202020
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import androidx.test.core.app.ApplicationProvider
+import `in`.rahulja.vision202020.service.BootReceiver
 import `in`.rahulja.vision202020.ui.breakui.BreakActivity
 import `in`.rahulja.vision202020.ui.main.MainActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -51,5 +54,19 @@ class ManifestSanityTest {
             expectedConfigChanges,
             breakActivityInfo.configChanges and expectedConfigChanges
         )
+    }
+
+    @Test
+    fun testBootReceiverIntentFilters() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val pm = context.packageManager
+        val bootIntent = Intent(Intent.ACTION_BOOT_COMPLETED).setPackage(context.packageName)
+        val packageReplacedIntent = Intent(Intent.ACTION_MY_PACKAGE_REPLACED).setPackage(context.packageName)
+
+        val bootReceivers = pm.queryBroadcastReceivers(bootIntent, 0)
+        val packageReplacedReceivers = pm.queryBroadcastReceivers(packageReplacedIntent, 0)
+
+        assertTrue(bootReceivers.any { it.activityInfo.name == BootReceiver::class.java.name })
+        assertTrue(packageReplacedReceivers.any { it.activityInfo.name == BootReceiver::class.java.name })
     }
 }

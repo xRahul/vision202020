@@ -1,6 +1,8 @@
 package `in`.rahulja.vision202020.ui.settings
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -296,10 +298,17 @@ fun SettingsScreen(
 
             val versionName = remember {
                 try {
-                    context.packageManager.getPackageInfo(context.packageName, 0).versionName
-                        ?: "1.1.4"
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.packageManager.getPackageInfo(
+                            context.packageName,
+                            PackageManager.PackageInfoFlags.of(0)
+                        ).versionName
+                    } else {
+                        @Suppress("DEPRECATION")
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                    } ?: "1.1.8"
                 } catch (e: Exception) {
-                    "1.1.4"
+                    "1.1.8"
                 }
             }
             val uriHandler = LocalUriHandler.current
@@ -347,7 +356,9 @@ fun SettingsScreen(
                         TextButton(
                             onClick = {
                                 context.startActivity(
-                                    Intent(context, AboutLibrariesActivity::class.java)
+                                    Intent(context, AboutLibrariesActivity::class.java).apply {
+                                        putExtra(AboutLibrariesActivity.EXTRA_THEME, preferences.appTheme.name)
+                                    }
                                 )
                             }
                         ) {

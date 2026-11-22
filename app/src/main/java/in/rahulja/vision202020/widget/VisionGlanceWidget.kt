@@ -28,6 +28,7 @@ import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.NotificationHelper
 import `in`.rahulja.vision202020.service.VisionTimerService
+import `in`.rahulja.vision202020.ui.theme.VisionGlanceColorProviders
 
 class VisionGlanceWidget : GlanceAppWidget() {
 
@@ -68,7 +69,7 @@ class VisionGlanceWidget : GlanceAppWidget() {
         }
 
         provideContent {
-            GlanceTheme {
+            GlanceTheme(colors = VisionGlanceColorProviders) {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
@@ -82,6 +83,7 @@ class VisionGlanceWidget : GlanceAppWidget() {
                     Text(
                         text = context.getString(R.string.widget_title),
                         style = TextStyle(
+                            color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -90,6 +92,7 @@ class VisionGlanceWidget : GlanceAppWidget() {
                     Text(
                         text = titleText,
                         style = TextStyle(
+                            color = GlanceTheme.colors.onSurface,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -112,6 +115,5 @@ class WidgetToggleActionCallback : ActionCallback {
         parameters: ActionParameters
     ) {
         VisionTimerService.toggle(context)
-        VisionGlanceWidget().update(context, glanceId)
     }
 }
