@@ -3,14 +3,19 @@ package `in`.rahulja.vision202020.data
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.SessionSnapshot
 import `in`.rahulja.vision202020.domain.TimerStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -78,6 +83,45 @@ class SessionStoreTest {
         store.clear()
 
         assertNull(store.load())
+    }
+
+    @Test
+    fun savesToDedicatedFile() = runTest(testDispatcher) {
+        val prefsStore = PreferenceDataStoreFactory.create(
+            scope = testScope,
+            produceFile = { tmpFolder.newFile("prefs.preferences_pb") }
+        )
+        val emissions = mutableListOf<Preferences>()
+        val collector = launch { prefsStore.data.collect { emissions.add(it) } }
+        advanceUntilIdle()
+        val before = emissions.size
+
+        store.save(SessionSnapshot(TimerStatus.Idle, isSessionActive = false))
+        advanceUntilIdle()
+
+        assertEquals(1, before)
+        assertEquals(before, emissions.size)
+        collector.cancel()
+    }
+
+    @Test
+    fun clearLegacyRemovesOldKey() = runTest(testDispatcher) {
+        val legacyKey = stringPreferencesKey("active_session_snapshot")
+        val otherKey = stringPreferencesKey("other")
+        val prefsStore = PreferenceDataStoreFactory.create(
+            scope = testScope,
+            produceFile = { tmpFolder.newFile("legacy.preferences_pb") }
+        )
+        prefsStore.edit {
+            it[legacyKey] = "stale"
+            it[otherKey] = "keep"
+        }
+
+        store.clearLegacy(prefsStore)
+
+        val result = prefsStore.data.first()
+        assertNull(result[legacyKey])
+        assertEquals("keep", result[otherKey])
     }
 
     @Test

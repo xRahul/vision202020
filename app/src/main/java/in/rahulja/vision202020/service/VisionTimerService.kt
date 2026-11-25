@@ -19,6 +19,7 @@ import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.SessionStore
 import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.data.dataStore
+import `in`.rahulja.vision202020.data.sessionDataStore
 import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.SessionSnapshot
 import `in`.rahulja.vision202020.domain.TimerStatus
@@ -74,7 +75,7 @@ class VisionTimerService : Service() {
         soundAlertHelper = SoundAlertHelper(this)
 
         val repo = PreferencesRepositoryImpl(applicationContext.dataStore)
-        sessionStore = SessionStore(applicationContext.dataStore)
+        sessionStore = SessionStore(applicationContext.sessionDataStore)
         engine = VisionTimerEngine(currentPrefs)
         engine.onBreakCompleted = {
             soundAlertHelper.playBreakEnded(currentPrefs.soundEnabled, currentPrefs.vibrationEnabled)

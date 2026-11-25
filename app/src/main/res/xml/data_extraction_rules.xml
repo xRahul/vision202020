@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+: keep the disposable session and the crash log out of cloud backup and device transfer. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="datastore/vision_session.preferences_pb" />
+        <exclude domain="file" path="crash-logs/last-crash.txt" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="datastore/vision_session.preferences_pb" />
+        <exclude domain="file" path="crash-logs/last-crash.txt" />
+    </device-transfer>
+</data-extraction-rules>
