@@ -24,6 +24,7 @@ class VisionApplication : Application() {
         CrashLogWriter.install(this)
         NotificationHelper(this).createChannels()
         applicationScope.launch {
+            // Best effort: a failed legacy clear is retried on the next launch.
             runCatching { SessionStore(sessionDataStore).clearLegacy(dataStore) }
         }
     }
