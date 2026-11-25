@@ -1,6 +1,9 @@
 package `in`.rahulja.vision202020.tile
 
+import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.service.quicksettings.Tile
@@ -9,6 +12,7 @@ import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.NotificationHelper
 import `in`.rahulja.vision202020.service.VisionTimerService
+import `in`.rahulja.vision202020.ui.main.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,7 +46,27 @@ class VisionTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        VisionTimerService.toggle(applicationContext)
+        if (!VisionTimerService.toggle(applicationContext)) {
+            openMainActivity()
+        }
+    }
+
+    /** Fallback when the foreground-service start is denied: let the user act from the app. */
+    @SuppressLint("StartActivityAndCollapseDeprecated") // Intent overload only runs below API 34.
+    private fun openMainActivity() {
+        val intent = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            startActivityAndCollapse(pendingIntent)
+        } else {
+            @Suppress("DEPRECATION")
+            startActivityAndCollapse(intent)
+        }
     }
 
     override fun onDestroy() {

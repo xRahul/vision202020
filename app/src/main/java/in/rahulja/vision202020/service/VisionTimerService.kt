@@ -10,6 +10,7 @@ import android.content.res.Configuration
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
+import android.util.Log
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.glance.appwidget.updateAll
@@ -69,6 +70,9 @@ class VisionTimerService : Service() {
     private var foregroundStarted = false
     private var explicitCommandReceived = false
     private var sessionStopped = false
+
+    /** Toggles waiting for restore to finish; a "nothing to resume" restore must not stop the service under them. */
+    private var pendingToggles = 0
 
     private val applicationScope: CoroutineScope
         get() = (application as VisionApplication).applicationScope
@@ -163,7 +167,8 @@ class VisionTimerService : Service() {
             // OS restarted a sticky service. restoreSessionIfNeeded() decides to resume or stop.
             return Service.START_STICKY
         }
-        if (action != ACTION_RESTORE) {
+        // TOGGLE sets the flag itself, once restore has finished.
+        if (action != ACTION_RESTORE && action != ACTION_TOGGLE) {
             explicitCommandReceived = true
         }
         sessionStopped = false
@@ -192,17 +197,40 @@ class VisionTimerService : Service() {
             ACTION_TRIGGER_BREAK -> engine.triggerBreak()
 
             ACTION_COMPLETE_BREAK -> engine.completeBreak()
+
+            ACTION_TOGGLE -> {
+                pendingToggles++
+                serviceScope.launch {
+                    try {
+                        restoreJob?.join()
+                        explicitCommandReceived = true
+                        resolveToggle()
+                    } finally {
+                        pendingToggles--
+                    }
+                }
+            }
         }
         // A command that cannot produce a live session must not leave a foreground service.
         // Clear the flags first so a command arriving before destruction starts foreground cleanly.
-        // RESTORE is exempt: the engine is still Idle while the restore coroutine reads the store.
-        if (action != ACTION_RESTORE && !engine.isSessionActive && engine.state.value is TimerStatus.Idle) {
+        // RESTORE and TOGGLE are exempt: the engine is still Idle while the restore coroutine reads the store.
+        if (action != ACTION_RESTORE && action != ACTION_TOGGLE && !engine.isSessionActive && engine.state.value is TimerStatus.Idle) {
             sessionStopped = true
             foregroundStarted = false
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
         return Service.START_STICKY
+    }
+
+    /** Tile/widget toggle, resolved against the restored state. Never destroys an active session by accident. */
+    internal fun resolveToggle() {
+        when (val status = engine.state.value) {
+            is TimerStatus.Idle -> startTimer()
+            is TimerStatus.Working -> if (status.isScreenPaused) engine.resume() else engine.pause()
+            is TimerStatus.RestBreak -> engine.completeBreak()
+            is TimerStatus.Snoozed -> engine.triggerBreak()
+        }
     }
 
     private fun startTimer() {
@@ -294,6 +322,8 @@ class VisionTimerService : Service() {
             val snapshot = runCatching { sessionStore.load(currentBootCount()) }.getOrNull()
             if (explicitCommandReceived) return@launch
             if (snapshot == null || !snapshot.isResumable) {
+                // A toggle waiting on this restore will start a fresh session; keep the service alive for it.
+                if (pendingToggles > 0) return@launch
                 // Nothing to resume: drop the foreground notification a RESTORE start posted.
                 sessionStopped = true
                 foregroundStarted = false
@@ -435,6 +465,9 @@ class VisionTimerService : Service() {
         const val ACTION_SNOOZE = "in.rahulja.vision202020.action.SNOOZE"
         const val ACTION_TRIGGER_BREAK = "in.rahulja.vision202020.action.TRIGGER_BREAK"
         const val ACTION_COMPLETE_BREAK = "in.rahulja.vision202020.action.COMPLETE_BREAK"
+        const val ACTION_TOGGLE = "in.rahulja.vision202020.action.TOGGLE"
+
+        private const val TAG = "VisionTimerService"
 
         const val WIDGET_UPDATE_INTERVAL_MS = 5000L
 
@@ -458,20 +491,21 @@ class VisionTimerService : Service() {
 
         fun snooze(context: Context) = send(context, ACTION_SNOOZE)
 
-        /** QS tile / widget toggle: never destroys an active session by accident. */
-        fun toggle(context: Context) {
-            when (val status = VisionTimerStateHolder.state.value) {
-                is TimerStatus.Idle -> start(context)
-                is TimerStatus.Working -> if (status.isScreenPaused) resume(context) else pause(context)
-                is TimerStatus.RestBreak -> completeBreak(context)
-                is TimerStatus.Snoozed -> triggerBreak(context)
-            }
-        }
+        /** QS tile / widget toggle. The service resolves it after restore, so it acts on the restored session. */
+        fun toggle(context: Context): Boolean = send(context, ACTION_TOGGLE)
 
-        private fun send(context: Context, action: String) {
+        /** Returns false when Android denies the foreground-service start (e.g. background start restrictions). */
+        private fun send(context: Context, action: String): Boolean {
             val intent = Intent(context, VisionTimerService::class.java).apply { this.action = action }
-            // Works from the tile/widget while the app is in the background.
-            ContextCompat.startForegroundService(context, intent)
+            return try {
+                // Works from the tile/widget while the app is in the background.
+                ContextCompat.startForegroundService(context, intent)
+                true
+            } catch (e: IllegalStateException) {
+                // ForegroundServiceStartNotAllowedException (API 31+) is a subclass.
+                Log.w(TAG, "Foreground service start denied for $action", e)
+                false
+            }
         }
     }
 }
