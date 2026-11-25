@@ -3,7 +3,9 @@ package `in`.rahulja.vision202020.ui.about
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -21,6 +23,7 @@ import `in`.rahulja.vision202020.ui.theme.VisionTheme
 class AboutLibrariesActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val initialTheme = intent.getStringExtra(EXTRA_THEME)
             ?.let { runCatching { AppThemeMode.valueOf(it) }.getOrNull() }
@@ -39,7 +42,9 @@ class AboutLibrariesActivity : ComponentActivity() {
                 val libraries by produceLibraries(librariesJson)
                 LibrariesContainer(
                     libraries = libraries,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .safeDrawingPadding()
                 )
             }
         }

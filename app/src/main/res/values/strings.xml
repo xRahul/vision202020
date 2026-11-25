@@ -98,6 +98,12 @@
     <string name="permission_enable_notifications">Enable Notifications</string>
     <string name="permission_grant_overlay">Grant Overlay Access</string>
     <string name="permission_grant_fullscreen">Allow Full-Screen Alerts</string>
+    <string name="permission_break_channel_title">Break Alerts Are Blocked</string>
+    <string name="permission_break_channel_body">The break alert channel is turned off, so rest reminders cannot appear. Turn it back on in notification settings.</string>
+    <string name="permission_open_alert_settings">Open Alert Settings</string>
+    <string name="permission_battery_title">Battery Optimization</string>
+    <string name="permission_battery_body">Battery optimization can delay or stop reminders while the screen is off. Exempt Vision 20-20-20 so breaks stay on time.</string>
+    <string name="permission_open_battery_settings">Battery Settings</string>
 
     <!-- Break screen -->
     <string name="break_rest_eyes">Rest Your Eyes</string>

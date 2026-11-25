@@ -72,7 +72,11 @@ fun MainScreen(
     onRequestOverlayPermission: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onRequestFullScreenIntent: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showBreakChannelCard: Boolean = false,
+    showBatteryCard: Boolean = false,
+    onOpenBreakChannelSettings: () -> Unit = {},
+    onRequestBatteryExemption: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -115,6 +119,10 @@ fun MainScreen(
                     hasOverlayPermission = hasOverlayPermission,
                     hasNotificationPermission = hasNotificationPermission,
                     showFullScreenIntentCard = showFullScreenIntentCard,
+                    showBreakChannelCard = showBreakChannelCard,
+                    showBatteryCard = showBatteryCard,
+                    onOpenBreakChannelSettings = onOpenBreakChannelSettings,
+                    onRequestBatteryExemption = onRequestBatteryExemption,
                     outerSize = 190.dp,
                     indicatorSize = 170.dp,
                     timeTextSize = 36.sp,
@@ -137,6 +145,10 @@ fun MainScreen(
                     hasOverlayPermission = hasOverlayPermission,
                     hasNotificationPermission = hasNotificationPermission,
                     showFullScreenIntentCard = showFullScreenIntentCard,
+                    showBreakChannelCard = showBreakChannelCard,
+                    showBatteryCard = showBatteryCard,
+                    onOpenBreakChannelSettings = onOpenBreakChannelSettings,
+                    onRequestBatteryExemption = onRequestBatteryExemption,
                     outerSize = 240.dp,
                     indicatorSize = 220.dp,
                     timeTextSize = 46.sp,
@@ -164,6 +176,10 @@ private fun TimerContent(
     hasOverlayPermission: Boolean,
     hasNotificationPermission: Boolean,
     showFullScreenIntentCard: Boolean,
+    showBreakChannelCard: Boolean,
+    showBatteryCard: Boolean,
+    onOpenBreakChannelSettings: () -> Unit,
+    onRequestBatteryExemption: () -> Unit,
     outerSize: Dp,
     indicatorSize: Dp,
     timeTextSize: TextUnit,
@@ -186,7 +202,11 @@ private fun TimerContent(
             showFullScreenIntentCard = showFullScreenIntentCard,
             onRequestOverlayPermission = onRequestOverlayPermission,
             onRequestNotificationPermission = onRequestNotificationPermission,
-            onRequestFullScreenIntent = onRequestFullScreenIntent
+            onRequestFullScreenIntent = onRequestFullScreenIntent,
+            showBreakChannelCard = showBreakChannelCard,
+            showBatteryCard = showBatteryCard,
+            onOpenBreakChannelSettings = onOpenBreakChannelSettings,
+            onRequestBatteryExemption = onRequestBatteryExemption
         )
     }
     val timerCircle: @Composable () -> Unit = {

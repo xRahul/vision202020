@@ -1,21 +1,19 @@
 package `in`.rahulja.vision202020.ui.main
 
 import android.Manifest
-import android.app.NotificationManager
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
@@ -36,12 +34,12 @@ class MainActivity : ComponentActivity() {
         }
     )
 
-    private var hasOverlayPermission by mutableStateOf(false)
-    private var hasNotificationPermission by mutableStateOf(false)
-    private var canUseFullScreenIntent by mutableStateOf(true)
+    private var permissionState by mutableStateOf(PermissionState(false, true, true, true, true))
     private var isSettingsOpen by mutableStateOf(false)
+    private var notificationRequestedBefore = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         refreshPermissionStates()
@@ -53,7 +51,10 @@ class MainActivity : ComponentActivity() {
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission()
             ) { isGranted ->
-                hasNotificationPermission = isGranted
+                refreshPermissionStates()
+                if (shouldOpenNotificationSettings(isGranted, shouldShowNotificationRationale())) {
+                    startSettingsWithFallback(appNotificationSettingsIntent(this))
+                }
             }
 
             BackHandler(enabled = isSettingsOpen) {
@@ -80,9 +81,11 @@ class MainActivity : ComponentActivity() {
                     MainScreen(
                         status = status,
                         preferences = preferences,
-                        hasOverlayPermission = hasOverlayPermission,
-                        hasNotificationPermission = hasNotificationPermission,
-                        showFullScreenIntentCard = !canUseFullScreenIntent,
+                        hasOverlayPermission = permissionState.overlay,
+                        hasNotificationPermission = permissionState.notifications,
+                        showFullScreenIntentCard = !permissionState.fullScreenIntent,
+                        showBreakChannelCard = !permissionState.breakChannelEnabled,
+                        showBatteryCard = !permissionState.ignoringBatteryOptimizations,
                         onStart = { VisionTimerService.start(this) },
                         onPause = { VisionTimerService.pause(this) },
                         onResume = { VisionTimerService.resume(this) },
@@ -92,11 +95,21 @@ class MainActivity : ComponentActivity() {
                         onOpenSettings = { isSettingsOpen = true },
                         onRequestOverlayPermission = { refreshPermissionStates() },
                         onRequestNotificationPermission = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                notificationRequestedBefore && !shouldShowNotificationRationale()
+                            ) {
+                                startSettingsWithFallback(appNotificationSettingsIntent(this))
+                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationRequestedBefore = true
                                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                // Pre-13: notifications are blocked in system settings only.
+                                startSettingsWithFallback(appNotificationSettingsIntent(this))
                             }
                         },
-                        onRequestFullScreenIntent = { refreshPermissionStates() }
+                        onRequestFullScreenIntent = { refreshPermissionStates() },
+                        onOpenBreakChannelSettings = { startSettingsWithFallback(breakChannelSettingsIntent(this)) },
+                        onRequestBatteryExemption = { startSettingsWithFallback(batterySettingsIntent()) }
                     )
                 }
             }
@@ -108,23 +121,10 @@ class MainActivity : ComponentActivity() {
         refreshPermissionStates()
     }
 
+    private fun shouldShowNotificationRationale(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)
+
     private fun refreshPermissionStates() {
-        hasOverlayPermission = Settings.canDrawOverlays(this)
-
-        hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-
-        canUseFullScreenIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.canUseFullScreenIntent() ?: true
-        } else {
-            true
-        }
+        permissionState = readPermissionState(this)
     }
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Warning
@@ -46,7 +47,11 @@ fun PermissionGateCard(
     onRequestOverlayPermission: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onRequestFullScreenIntent: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showBreakChannelCard: Boolean = false,
+    showBatteryCard: Boolean = false,
+    onOpenBreakChannelSettings: () -> Unit = {},
+    onRequestBatteryExemption: () -> Unit = {}
 ) {
     Column(modifier = modifier) {
         if (!hasNotificationPermission) {
@@ -56,6 +61,16 @@ fun PermissionGateCard(
                 body = stringResource(R.string.permission_notification_body),
                 buttonLabel = stringResource(R.string.permission_enable_notifications),
                 onClick = onRequestNotificationPermission
+            )
+        }
+
+        if (hasNotificationPermission && showBreakChannelCard) {
+            PermissionCard(
+                icon = Icons.Default.Warning,
+                title = stringResource(R.string.permission_break_channel_title),
+                body = stringResource(R.string.permission_break_channel_body),
+                buttonLabel = stringResource(R.string.permission_open_alert_settings),
+                onClick = onOpenBreakChannelSettings
             )
         }
 
@@ -92,6 +107,16 @@ fun PermissionGateCard(
                     runCatching { context.startActivity(intent) }
                     onRequestFullScreenIntent()
                 }
+            )
+        }
+
+        if (showBatteryCard) {
+            PermissionCard(
+                icon = Icons.Default.BatteryAlert,
+                title = stringResource(R.string.permission_battery_title),
+                body = stringResource(R.string.permission_battery_body),
+                buttonLabel = stringResource(R.string.permission_open_battery_settings),
+                onClick = onRequestBatteryExemption
             )
         }
     }

@@ -9,6 +9,7 @@ import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.ui.main.MainScreen
 import `in`.rahulja.vision202020.ui.theme.VisionTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -55,6 +56,79 @@ class MainScreenTest {
 
         composeTestRule.onNodeWithText("Start Session").performClick()
         assertTrue("onStart should be triggered", startClicked)
+    }
+
+    @Test
+    @Config(qualifiers = "w392dp-h800dp-port")
+    fun notificationCardOpensSettingsAfterPermanentDenial() {
+        var notificationClicks = 0
+        var batteryClicks = 0
+
+        composeTestRule.setContent {
+            VisionTheme {
+                MainScreen(
+                    status = TimerStatus.Idle,
+                    preferences = UserPreferences(),
+                    hasOverlayPermission = true,
+                    hasNotificationPermission = false,
+                    showFullScreenIntentCard = false,
+                    showBatteryCard = true,
+                    onStart = {},
+                    onPause = {},
+                    onResume = {},
+                    onReset = {},
+                    onStop = {},
+                    onTriggerBreak = {},
+                    onOpenSettings = {},
+                    onRequestOverlayPermission = {},
+                    onRequestNotificationPermission = { notificationClicks++ },
+                    onRequestFullScreenIntent = {},
+                    onRequestBatteryExemption = { batteryClicks++ }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Enable Notifications").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Battery Settings").performScrollTo().performClick()
+
+        assertEquals(1, notificationClicks)
+        assertEquals(1, batteryClicks)
+    }
+
+    @Test
+    @Config(qualifiers = "w392dp-h800dp-port")
+    fun blockedBreakChannelCardOpensChannelSettings() {
+        var channelClicks = 0
+
+        composeTestRule.setContent {
+            VisionTheme {
+                MainScreen(
+                    status = TimerStatus.Idle,
+                    preferences = UserPreferences(),
+                    hasOverlayPermission = true,
+                    hasNotificationPermission = true,
+                    showFullScreenIntentCard = false,
+                    showBreakChannelCard = true,
+                    onStart = {},
+                    onPause = {},
+                    onResume = {},
+                    onReset = {},
+                    onStop = {},
+                    onTriggerBreak = {},
+                    onOpenSettings = {},
+                    onRequestOverlayPermission = {},
+                    onRequestNotificationPermission = {},
+                    onRequestFullScreenIntent = {},
+                    onOpenBreakChannelSettings = { channelClicks++ },
+                    onRequestBatteryExemption = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Open Alert Settings").performScrollTo().performClick()
+
+        assertEquals(1, channelClicks)
+        assertEquals(1, channelClicks)
     }
 
     @Test
