@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -14,7 +15,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.setViewTreeLifecycleOwner
-import android.util.Log
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -75,8 +75,8 @@ class OverlayManager(private val context: Context) {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.CENTER
@@ -164,7 +164,9 @@ class OverlayManager(private val context: Context) {
         }
     }
 
-    private class OverlayLifecycleOwner : LifecycleOwner, SavedStateRegistryOwner {
+    private class OverlayLifecycleOwner :
+        LifecycleOwner,
+        SavedStateRegistryOwner {
         private val lifecycleRegistry = LifecycleRegistry(this)
         private val savedStateRegistryController = SavedStateRegistryController.create(this)
 

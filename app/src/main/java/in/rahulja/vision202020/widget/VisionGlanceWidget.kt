@@ -51,10 +51,12 @@ class VisionGlanceWidget : GlanceAppWidget() {
                     if (status.isScreenPaused) R.string.widget_resume else R.string.action_pause
                 )
             )
+
             is TimerStatus.RestBreak -> Pair(
                 context.getString(R.string.widget_break, status.remainingSeconds),
                 context.getString(R.string.widget_skip)
             )
+
             is TimerStatus.Snoozed -> Pair(
                 context.getString(
                     R.string.widget_snoozed,
@@ -62,6 +64,7 @@ class VisionGlanceWidget : GlanceAppWidget() {
                 ),
                 context.getString(R.string.widget_rest_now)
             )
+
             is TimerStatus.Idle -> Pair(
                 context.getString(R.string.widget_idle),
                 context.getString(R.string.widget_start)
@@ -109,11 +112,7 @@ class VisionGlanceWidget : GlanceAppWidget() {
 }
 
 class WidgetToggleActionCallback : ActionCallback {
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         VisionTimerService.toggle(context)
     }
 }

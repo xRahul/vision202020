@@ -29,11 +29,9 @@ class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels(
         factoryProducer = {
             object : ViewModelProvider.Factory {
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                    return MainViewModel(
-                        PreferencesRepositoryImpl(applicationContext.dataStore)
-                    ) as T
-                }
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = MainViewModel(
+                    PreferencesRepositoryImpl(applicationContext.dataStore)
+                ) as T
             }
         }
     )

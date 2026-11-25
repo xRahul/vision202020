@@ -10,7 +10,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 class NotificationHelperTest {
@@ -45,7 +44,7 @@ class NotificationHelperTest {
         val status = TimerStatus.Working(
             remainingSeconds = 1195,
             elapsedSeconds = 5,
-            totalSeconds = 1200,
+            totalSeconds = 1200
         )
 
         val notification = notificationHelper.buildTimerNotification(status)

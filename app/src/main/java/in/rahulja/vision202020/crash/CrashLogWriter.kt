@@ -17,8 +17,7 @@ object CrashLogWriter {
 
     private var appContext: Context? = null
 
-    fun file(context: Context): File =
-        File(File(context.filesDir, "crash-logs"), FILE_NAME)
+    fun file(context: Context): File = File(File(context.filesDir, "crash-logs"), FILE_NAME)
 
     fun install(context: Context) {
         appContext = context.applicationContext

@@ -4,9 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.test.resetMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -47,7 +47,10 @@ class VisionTimerStateHolderTest {
     @Test
     fun `state transitions to RestBreak`() = runTest {
         VisionTimerStateHolder.setState(TimerStatus.RestBreak(remainingSeconds = 20, totalSeconds = 20, breakStartedTimestampMs = 0L))
-        assertEquals(TimerStatus.RestBreak(remainingSeconds = 20, totalSeconds = 20, breakStartedTimestampMs = 0L), VisionTimerStateHolder.state.value)
+        assertEquals(
+            TimerStatus.RestBreak(remainingSeconds = 20, totalSeconds = 20, breakStartedTimestampMs = 0L),
+            VisionTimerStateHolder.state.value
+        )
     }
 
     @Test

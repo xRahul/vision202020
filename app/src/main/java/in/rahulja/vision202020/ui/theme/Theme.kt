@@ -53,10 +53,7 @@ val VisionGlanceColorProviders = ColorProviders(
 )
 
 @Composable
-fun VisionTheme(
-    appTheme: AppThemeMode = AppThemeMode.OLED_BLACK,
-    content: @Composable () -> Unit
-) {
+fun VisionTheme(appTheme: AppThemeMode = AppThemeMode.OLED_BLACK, content: @Composable () -> Unit) {
     val colorScheme = when (appTheme) {
         AppThemeMode.LIGHT -> LightColorScheme
         AppThemeMode.DARK -> DarkColorScheme

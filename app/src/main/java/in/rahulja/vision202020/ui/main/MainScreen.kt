@@ -303,16 +303,19 @@ private fun TimerProgressCircle(
             }
             Triple(formatted, sub, prog)
         }
+
         is TimerStatus.RestBreak -> Triple(
             stringResource(R.string.rest_seconds_value, status.remainingSeconds),
             stringResource(R.string.subtitle_break),
             status.remainingSeconds.toFloat() / status.totalSeconds.coerceAtLeast(1).toFloat()
         )
+
         is TimerStatus.Snoozed -> Triple(
             NotificationHelper.formatTime(status.remainingSeconds),
             stringResource(R.string.subtitle_snoozed),
             status.remainingSeconds.toFloat() / status.totalSeconds.coerceAtLeast(1).toFloat()
         )
+
         is TimerStatus.Idle -> Triple(
             stringResource(R.string.idle_time_value, preferences.workDurationMinutes),
             stringResource(R.string.subtitle_ready),
@@ -392,6 +395,7 @@ private fun TimerActionControls(
                     )
                 }
             }
+
             is TimerStatus.Working -> {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -487,6 +491,7 @@ private fun TimerActionControls(
                     }
                 }
             }
+
             else -> {
                 Button(
                     onClick = onStop,

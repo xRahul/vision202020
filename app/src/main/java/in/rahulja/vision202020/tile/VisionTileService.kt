@@ -66,32 +66,33 @@ class VisionTileService : TileService() {
     }
 
     companion object {
-        fun mapStatusToTileState(context: Context, status: TimerStatus): Pair<Int, String> {
-            return when (status) {
-                is TimerStatus.Idle -> Pair(
-                    Tile.STATE_INACTIVE,
-                    context.getString(R.string.tile_tap_to_start)
-                )
-                is TimerStatus.Working -> {
-                    val formatted = NotificationHelper.formatTime(status.remainingSeconds)
-                    if (status.isScreenPaused) {
-                        Pair(Tile.STATE_INACTIVE, context.getString(R.string.tile_paused, formatted))
-                    } else {
-                        Pair(Tile.STATE_ACTIVE, context.getString(R.string.tile_left, formatted))
-                    }
+        fun mapStatusToTileState(context: Context, status: TimerStatus): Pair<Int, String> = when (status) {
+            is TimerStatus.Idle -> Pair(
+                Tile.STATE_INACTIVE,
+                context.getString(R.string.tile_tap_to_start)
+            )
+
+            is TimerStatus.Working -> {
+                val formatted = NotificationHelper.formatTime(status.remainingSeconds)
+                if (status.isScreenPaused) {
+                    Pair(Tile.STATE_INACTIVE, context.getString(R.string.tile_paused, formatted))
+                } else {
+                    Pair(Tile.STATE_ACTIVE, context.getString(R.string.tile_left, formatted))
                 }
-                is TimerStatus.RestBreak -> Pair(
-                    Tile.STATE_ACTIVE,
-                    context.getString(R.string.tile_rest, status.remainingSeconds)
-                )
-                is TimerStatus.Snoozed -> Pair(
-                    Tile.STATE_INACTIVE,
-                    context.getString(
-                        R.string.tile_snoozed,
-                        NotificationHelper.formatTime(status.remainingSeconds)
-                    )
-                )
             }
+
+            is TimerStatus.RestBreak -> Pair(
+                Tile.STATE_ACTIVE,
+                context.getString(R.string.tile_rest, status.remainingSeconds)
+            )
+
+            is TimerStatus.Snoozed -> Pair(
+                Tile.STATE_INACTIVE,
+                context.getString(
+                    R.string.tile_snoozed,
+                    NotificationHelper.formatTime(status.remainingSeconds)
+                )
+            )
         }
     }
 }

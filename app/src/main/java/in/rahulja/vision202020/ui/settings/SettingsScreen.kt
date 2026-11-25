@@ -376,11 +376,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun ThemeChip(
-    selected: Boolean,
-    label: String,
-    onClick: () -> Unit
-) {
+private fun ThemeChip(selected: Boolean, label: String, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
@@ -393,10 +389,7 @@ private fun ThemeChip(
 }
 
 @Composable
-private fun SettingsCard(
-    title: String,
-    content: @Composable () -> Unit
-) {
+private fun SettingsCard(title: String, content: @Composable () -> Unit) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -418,11 +411,7 @@ private fun SettingsCard(
 }
 
 @Composable
-private fun ToggleRow(
-    label: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
+private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,

@@ -9,10 +9,10 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "vision_preferences")
 
@@ -30,9 +30,7 @@ interface PreferencesRepository {
     suspend fun updateStartOnBoot(enabled: Boolean)
 }
 
-class PreferencesRepositoryImpl(
-    private val dataStore: DataStore<Preferences>
-) : PreferencesRepository {
+class PreferencesRepositoryImpl(private val dataStore: DataStore<Preferences>) : PreferencesRepository {
 
     private object PreferencesKeys {
         val WORK_DURATION_MINUTES = intPreferencesKey("work_duration_minutes")

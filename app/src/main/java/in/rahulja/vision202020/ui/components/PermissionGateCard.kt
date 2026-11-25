@@ -48,53 +48,52 @@ fun PermissionGateCard(
     onRequestFullScreenIntent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (!hasNotificationPermission) {
-        PermissionCard(
-            icon = Icons.Default.Notifications,
-            title = stringResource(R.string.permission_notification_title),
-            body = stringResource(R.string.permission_notification_body),
-            buttonLabel = stringResource(R.string.permission_enable_notifications),
-            onClick = onRequestNotificationPermission,
-            modifier = modifier
-        )
-    }
+    Column(modifier = modifier) {
+        if (!hasNotificationPermission) {
+            PermissionCard(
+                icon = Icons.Default.Notifications,
+                title = stringResource(R.string.permission_notification_title),
+                body = stringResource(R.string.permission_notification_body),
+                buttonLabel = stringResource(R.string.permission_enable_notifications),
+                onClick = onRequestNotificationPermission
+            )
+        }
 
-    if (showOverlayCard && !hasOverlayPermission) {
-        val context = LocalContext.current
-        PermissionCard(
-            icon = Icons.Default.Warning,
-            title = stringResource(R.string.permission_overlay_title),
-            body = stringResource(R.string.permission_overlay_body),
-            buttonLabel = stringResource(R.string.permission_grant_overlay),
-            onClick = {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    "package:${context.packageName}".toUri()
-                )
-                runCatching { context.startActivity(intent) }
-                onRequestOverlayPermission()
-            },
-            modifier = modifier
-        )
-    }
+        if (showOverlayCard && !hasOverlayPermission) {
+            val context = LocalContext.current
+            PermissionCard(
+                icon = Icons.Default.Warning,
+                title = stringResource(R.string.permission_overlay_title),
+                body = stringResource(R.string.permission_overlay_body),
+                buttonLabel = stringResource(R.string.permission_grant_overlay),
+                onClick = {
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        "package:${context.packageName}".toUri()
+                    )
+                    runCatching { context.startActivity(intent) }
+                    onRequestOverlayPermission()
+                }
+            )
+        }
 
-    if (showFullScreenIntentCard) {
-        val context = LocalContext.current
-        PermissionCard(
-            icon = Icons.Default.Fullscreen,
-            title = stringResource(R.string.permission_fullscreen_title),
-            body = stringResource(R.string.permission_fullscreen_body),
-            buttonLabel = stringResource(R.string.permission_grant_fullscreen),
-            onClick = {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
-                    "package:${context.packageName}".toUri()
-                )
-                runCatching { context.startActivity(intent) }
-                onRequestFullScreenIntent()
-            },
-            modifier = modifier
-        )
+        if (showFullScreenIntentCard) {
+            val context = LocalContext.current
+            PermissionCard(
+                icon = Icons.Default.Fullscreen,
+                title = stringResource(R.string.permission_fullscreen_title),
+                body = stringResource(R.string.permission_fullscreen_body),
+                buttonLabel = stringResource(R.string.permission_grant_fullscreen),
+                onClick = {
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                        "package:${context.packageName}".toUri()
+                    )
+                    runCatching { context.startActivity(intent) }
+                    onRequestFullScreenIntent()
+                }
+            )
+        }
     }
 }
 

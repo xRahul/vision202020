@@ -152,16 +152,24 @@ class VisionTimerService : Service() {
 
         when (action) {
             ACTION_RESTORE -> restoreSessionIfNeeded()
+
             ACTION_START -> startTimer()
+
             ACTION_PAUSE -> engine.pause()
+
             ACTION_RESUME -> engine.resume()
+
             ACTION_RESET -> {
                 engine.reset()
                 startTickerIfRunning()
             }
+
             ACTION_STOP -> stopTimer()
+
             ACTION_SNOOZE -> engine.snooze(currentPrefs.snoozeMinutes * 60)
+
             ACTION_TRIGGER_BREAK -> engine.triggerBreak()
+
             ACTION_COMPLETE_BREAK -> engine.completeBreak()
         }
         // A command that cannot produce a live session must not leave a foreground service.
@@ -277,13 +285,11 @@ class VisionTimerService : Service() {
         }
     }
 
-    private fun timerNotificationKey(status: TimerStatus): String {
-        return when (status) {
-            is TimerStatus.Working -> "W:${status.remainingSeconds}:${status.pauseReason}"
-            is TimerStatus.RestBreak -> "R:${status.remainingSeconds}"
-            is TimerStatus.Snoozed -> "S:${status.remainingSeconds}"
-            is TimerStatus.Idle -> "I"
-        }
+    private fun timerNotificationKey(status: TimerStatus): String = when (status) {
+        is TimerStatus.Working -> "W:${status.remainingSeconds}:${status.pauseReason}"
+        is TimerStatus.RestBreak -> "R:${status.remainingSeconds}"
+        is TimerStatus.Snoozed -> "S:${status.remainingSeconds}"
+        is TimerStatus.Idle -> "I"
     }
 
     private fun handleStateChange(status: TimerStatus) {
@@ -332,6 +338,7 @@ class VisionTimerService : Service() {
                     )
                 }
             }
+
             is TimerStatus.Working -> {
                 overlayManager.dismissOverlay()
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
@@ -341,11 +348,13 @@ class VisionTimerService : Service() {
                     startTicker()
                 }
             }
+
             is TimerStatus.Snoozed -> {
                 overlayManager.dismissOverlay()
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
                 if (tickerJob?.isActive != true) startTicker()
             }
+
             is TimerStatus.Idle -> {
                 overlayManager.dismissOverlay()
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)

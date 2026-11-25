@@ -6,10 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 
-class ScreenStateReceiver(
-    private val onScreenOn: () -> Unit,
-    private val onScreenOff: () -> Unit
-) : BroadcastReceiver() {
+class ScreenStateReceiver(private val onScreenOn: () -> Unit, private val onScreenOff: () -> Unit) : BroadcastReceiver() {
 
     private var isRegistered = false
 

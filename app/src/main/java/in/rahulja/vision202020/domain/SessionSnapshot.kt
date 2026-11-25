@@ -4,10 +4,7 @@ package `in`.rahulja.vision202020.domain
  * Survives process death. Absolute timestamps make restore accurate: the engine
  * recomputes remaining time from the deadline instead of trusting a tick count.
  */
-data class SessionSnapshot(
-    val status: TimerStatus,
-    val isSessionActive: Boolean
-) {
+data class SessionSnapshot(val status: TimerStatus, val isSessionActive: Boolean) {
     /** A restored session is only meaningful if it was active and not already Idle. */
     val isResumable: Boolean get() = isSessionActive && status !is TimerStatus.Idle
 }
@@ -20,6 +17,7 @@ object SessionSnapshotCodec {
         val active = if (snapshot.isSessionActive) "1" else "0"
         val body = when (val status = snapshot.status) {
             is TimerStatus.Idle -> "I"
+
             is TimerStatus.Working -> listOf(
                 "W",
                 status.remainingSeconds,
@@ -29,12 +27,14 @@ object SessionSnapshotCodec {
                 status.deadlineTimestampMs,
                 status.remainingAtPauseMs
             ).joinToString(":")
+
             is TimerStatus.RestBreak -> listOf(
                 "R",
                 status.remainingSeconds,
                 status.totalSeconds,
                 status.breakStartedTimestampMs
             ).joinToString(":")
+
             is TimerStatus.Snoozed -> listOf(
                 "S",
                 status.remainingSeconds,
@@ -58,6 +58,7 @@ object SessionSnapshotCodec {
         val status = try {
             when (fields[0]) {
                 "I" -> TimerStatus.Idle
+
                 "W" -> TimerStatus.Working(
                     remainingSeconds = fields[1].toInt(),
                     elapsedSeconds = fields[2].toInt(),
@@ -66,16 +67,19 @@ object SessionSnapshotCodec {
                     deadlineTimestampMs = fields[5].toLong(),
                     remainingAtPauseMs = fields[6].toLong()
                 )
+
                 "R" -> TimerStatus.RestBreak(
                     remainingSeconds = fields[1].toInt(),
                     totalSeconds = fields[2].toInt(),
                     breakStartedTimestampMs = fields[3].toLong()
                 )
+
                 "S" -> TimerStatus.Snoozed(
                     remainingSeconds = fields[1].toInt(),
                     totalSeconds = fields[2].toInt(),
                     deadlineTimestampMs = fields[3].toLong()
                 )
+
                 else -> return null
             }
         } catch (e: RuntimeException) {

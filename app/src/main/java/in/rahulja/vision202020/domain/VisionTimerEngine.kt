@@ -12,10 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * main-thread jank, process death) cannot stretch the session. Ticks only translate
  * the deadline into display values.
  */
-class VisionTimerEngine(
-    private var prefs: UserPreferences,
-    private val timeProvider: () -> Long = { System.currentTimeMillis() }
-) {
+class VisionTimerEngine(private var prefs: UserPreferences, private val timeProvider: () -> Long = { System.currentTimeMillis() }) {
     private val _state = MutableStateFlow<TimerStatus>(TimerStatus.Idle)
     val state: StateFlow<TimerStatus> = _state.asStateFlow()
 
@@ -112,6 +109,7 @@ class VisionTimerEngine(
                     }
                 }
             }
+
             is TimerStatus.RestBreak -> {
                 if (!restDurationChanged) return
                 // Keep the break anchored to its start so shortening it can end it now.
@@ -127,6 +125,7 @@ class VisionTimerEngine(
                     )
                 }
             }
+
             else -> Unit
         }
     }
@@ -155,6 +154,7 @@ class VisionTimerEngine(
                 // Break/snooze countdown advances while the screen is off.
                 tickSecond()
             }
+
             is TimerStatus.Working -> {
                 if (wasOff && offDurationMs >= naturalBreakThresholdMs) {
                     // A natural break restarts the cycle, but an explicit user pause keeps
@@ -167,6 +167,7 @@ class VisionTimerEngine(
                 }
                 // Manual pause is preserved: only the user can clear it.
             }
+
             is TimerStatus.Idle -> {
                 _state.value = freshWorking(PauseReason.NONE)
             }
@@ -222,6 +223,7 @@ class VisionTimerEngine(
                     }
                 }
             }
+
             is TimerStatus.RestBreak -> {
                 val elapsedSec = ((now - current.breakStartedTimestampMs) / 1000L).toInt()
                 val newRemaining = (current.totalSeconds - elapsedSec).coerceAtLeast(0)
@@ -231,6 +233,7 @@ class VisionTimerEngine(
                     _state.value = current.copy(remainingSeconds = newRemaining)
                 }
             }
+
             is TimerStatus.Snoozed -> {
                 val remainingMs = current.deadlineTimestampMs - now
                 if (remainingMs <= 0L) {
@@ -242,6 +245,7 @@ class VisionTimerEngine(
                     }
                 }
             }
+
             is TimerStatus.Idle -> Unit
         }
     }

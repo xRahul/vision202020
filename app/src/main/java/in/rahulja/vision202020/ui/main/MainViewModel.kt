@@ -14,9 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class MainViewModel(
-    private val repository: PreferencesRepository
-) : ViewModel() {
+class MainViewModel(private val repository: PreferencesRepository) : ViewModel() {
 
     val timerStatus: StateFlow<TimerStatus> = VisionTimerStateHolder.state
 

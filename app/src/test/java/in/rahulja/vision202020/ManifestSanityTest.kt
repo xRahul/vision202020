@@ -15,7 +15,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 class ManifestSanityTest {
@@ -39,9 +38,9 @@ class ManifestSanityTest {
             PackageManager.GET_META_DATA
         )
         val expectedConfigChanges = ActivityInfo.CONFIG_ORIENTATION or
-                ActivityInfo.CONFIG_SCREEN_SIZE or
-                ActivityInfo.CONFIG_SCREEN_LAYOUT or
-                ActivityInfo.CONFIG_SMALLEST_SCREEN_SIZE
+            ActivityInfo.CONFIG_SCREEN_SIZE or
+            ActivityInfo.CONFIG_SCREEN_LAYOUT or
+            ActivityInfo.CONFIG_SMALLEST_SCREEN_SIZE
 
         assertEquals(
             "MainActivity must handle orientation and screen size config changes",

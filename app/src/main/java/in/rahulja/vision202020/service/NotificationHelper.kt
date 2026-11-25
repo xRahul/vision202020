@@ -76,16 +76,19 @@ class NotificationHelper(private val context: Context) {
                     )
                 }
             }
+
             is TimerStatus.RestBreak -> Triple(
                 context.getString(R.string.notif_title_break),
                 context.getString(R.string.notif_content_break, formatTime(status.remainingSeconds)),
                 true
             )
+
             is TimerStatus.Snoozed -> Triple(
                 context.getString(R.string.notif_title_snoozed),
                 context.getString(R.string.notif_content_snoozed, formatTime(status.remainingSeconds)),
                 true
             )
+
             is TimerStatus.Idle -> Triple(
                 context.getString(R.string.notif_title_idle),
                 context.getString(R.string.notif_content_idle),
@@ -135,6 +138,7 @@ class NotificationHelper(private val context: Context) {
                     servicePendingIntent(4, VisionTimerService.ACTION_STOP)
                 )
             }
+
             is TimerStatus.RestBreak -> {
                 builder.setProgress(status.totalSeconds, status.remainingSeconds, false)
                 builder.addAction(
@@ -153,6 +157,7 @@ class NotificationHelper(private val context: Context) {
                     servicePendingIntent(4, VisionTimerService.ACTION_STOP)
                 )
             }
+
             is TimerStatus.Snoozed -> {
                 builder.setProgress(status.totalSeconds, status.remainingSeconds, false)
                 builder.addAction(
@@ -166,6 +171,7 @@ class NotificationHelper(private val context: Context) {
                     servicePendingIntent(4, VisionTimerService.ACTION_STOP)
                 )
             }
+
             is TimerStatus.Idle -> {
                 builder.addAction(
                     android.R.drawable.ic_media_play,
@@ -178,10 +184,7 @@ class NotificationHelper(private val context: Context) {
         return builder.build()
     }
 
-    fun buildBreakAlertNotification(
-        status: TimerStatus.RestBreak,
-        preferences: UserPreferences
-    ): Notification {
+    fun buildBreakAlertNotification(status: TimerStatus.RestBreak, preferences: UserPreferences): Notification {
         val fullScreenIntent = Intent(context, BreakActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }

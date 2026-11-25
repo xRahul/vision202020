@@ -68,7 +68,7 @@ class MainScreenTest {
                     status = TimerStatus.Working(
                         remainingSeconds = 1100,
                         elapsedSeconds = 100,
-                        totalSeconds = 1200,
+                        totalSeconds = 1200
                     ),
                     preferences = UserPreferences(),
                     hasOverlayPermission = true,
