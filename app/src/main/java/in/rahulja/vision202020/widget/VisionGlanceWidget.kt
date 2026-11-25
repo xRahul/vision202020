@@ -34,9 +34,11 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
+import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.VisionTimerService
+import `in`.rahulja.vision202020.service.runCatchingCancellable
 import `in`.rahulja.vision202020.ui.breakui.BreakLauncher
 import `in`.rahulja.vision202020.ui.main.MainActivity
 import `in`.rahulja.vision202020.ui.text.TimerStatusText
@@ -50,7 +52,8 @@ class VisionGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val prefsFlow = PreferencesRepositoryImpl(context.dataStore).preferencesFlow
         // Read the real strict flag up front so the first composition never assumes non-strict.
-        val initialPrefs = prefsFlow.first()
+        // A DataStore error must not fail provideGlance; fall back to defaults (cancellation still propagates).
+        val initialPrefs = runCatchingCancellable { prefsFlow.first() }.getOrDefault(UserPreferences())
 
         provideContent {
             val status by VisionTimerService.timerStatus.collectAsState()
