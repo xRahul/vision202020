@@ -9,6 +9,8 @@ IssueTracker: https://github.com/xRahul/vision202020/issues
 AutoName: Vision 20-20-20
 RepoType: git
 Repo: https://github.com/xRahul/vision202020.git
+AllowedAPKSigningKeys: 9ec14141874c3a8f2e3843f52582c311880fe5417eb6f097fdf8515db92f2511
+Binaries: https://github.com/xRahul/vision202020/releases/download/v%v/in.rahulja.vision202020-v%v-release.apk
 Builds:
   - versionName: 1.1.8
     versionCode: 49
@@ -16,8 +18,6 @@ Builds:
     subdir: app
     gradle:
       - yes
-      - -PversionCode=49
-      - -PversionName=1.1.8
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$

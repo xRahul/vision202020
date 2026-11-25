@@ -10,7 +10,7 @@ Status: ready to submit. No request has been opened yet.
 | Release APK under 30 MB | Yes, 2,126,241 bytes |
 | Release-signed, not debug-signed | Yes, `CN=Vision 20-20-20` |
 | Fastlane title, descriptions, icon, feature graphic | Present |
-| Fastlane changelog | `fastlane/metadata/android/en-US/changelogs/43.txt` |
+| Fastlane changelog | `fastlane/metadata/android/en-US/changelogs/49.txt` |
 | No proprietary dependencies or trackers | No `INTERNET`, no analytics, no ads |
 | Package name stable | `in.rahulja.vision202020` |
 | Source repository public | https://github.com/xRahul/vision202020 |

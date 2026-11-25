@@ -49,7 +49,34 @@ jobs:
             exit 1
           fi
 
+          TITLE_LEN=$(tr -d '\n' < fastlane/metadata/android/en-US/title.txt | wc -m | tr -d ' ')
+          echo "Title length: $TITLE_LEN characters"
+          if [ "$TITLE_LEN" -gt 50 ]; then
+            echo "Error: title.txt exceeds 50 characters (current: $TITLE_LEN)"
+            exit 1
+          fi
+
+          FULL_LEN=$(wc -m < fastlane/metadata/android/en-US/full_description.txt | tr -d ' ')
+          echo "Full description length: $FULL_LEN characters"
+          if [ "$FULL_LEN" -gt 4000 ]; then
+            echo "Error: full_description.txt exceeds 4000 characters (current: $FULL_LEN)"
+            exit 1
+          fi
+
+          VERSION_CODE=$(sed -n 's/^versionCode=//p' version.properties)
+          CHANGELOG="fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt"
+          test -f "$CHANGELOG" || (echo "Missing $CHANGELOG" && exit 1)
+          CHANGELOG_LEN=$(wc -m < "$CHANGELOG" | tr -d ' ')
+          echo "Changelog length: $CHANGELOG_LEN characters"
+          if [ "$CHANGELOG_LEN" -gt 500 ]; then
+            echo "Error: $CHANGELOG exceeds 500 characters (current: $CHANGELOG_LEN)"
+            exit 1
+          fi
+
           echo "Fastlane structure verified."
+
+      - name: Run Script Tests
+        run: python3 -m unittest discover scripts
 
       - name: Validate F-Droid Recipe
         run: |
