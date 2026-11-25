@@ -9,10 +9,19 @@
 ## Build and test
 
 ```bash
+./gradlew spotlessCheck
 ./gradlew testDebugUnitTest
 ./gradlew lintDebug
 ./gradlew assembleDebug
 ```
+
+Formatting uses Spotless with ktlint and Compose rules. Fix formatting with:
+
+```bash
+./gradlew spotlessApply
+```
+
+To hide the formatting commit from blame: `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
 A release APK needs a keystore:
 

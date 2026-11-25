@@ -17,6 +17,7 @@ robolectric = "4.16.1"
 androidxTestCore = "1.6.1"
 cyclonedx = "3.6.1"
 aboutLibraries = "14.2.1"
+spotless = "8.4.0"
 
 [libraries]
 androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
@@ -50,3 +51,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 cyclonedx-bom = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutLibraries" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
