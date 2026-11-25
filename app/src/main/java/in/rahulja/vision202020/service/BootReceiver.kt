@@ -31,7 +31,7 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 withTimeout(WORK_TIMEOUT_MS) { handle(context, action) }
             } finally {
-                pendingResult.finish()
+                pendingResult?.finish()
                 scope.cancel()
             }
         }
