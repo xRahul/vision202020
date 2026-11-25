@@ -17,6 +17,7 @@ import `in`.rahulja.vision202020.VisionApplication
 import `in`.rahulja.vision202020.data.EnforcementMode
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.SessionStore
+import `in`.rahulja.vision202020.data.SessionWriteLane
 import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.data.currentBootCount
 import `in`.rahulja.vision202020.data.dataStore
@@ -46,10 +47,13 @@ class VisionTimerService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    // A single sequential lane keeps snapshot writes in submission order, so a fast
-    // break->complete transition cannot persist the older state last.
-    private val sessionWriteDispatcher = Dispatchers.IO.limitedParallelism(1)
     private var tickerJob: Job? = null
+
+    /** The in-flight (or finished) restore decision; null until [restoreSessionIfNeeded] runs. */
+    internal var restoreJob: Job? = null
+
+    /** Test seam: lets a test hold the restore open to prove nothing stops the service meanwhile. */
+    internal var beforeRestoreLoad: (suspend () -> Unit)? = null
 
     private lateinit var notificationHelper: NotificationHelper
     private lateinit var overlayManager: OverlayManager
@@ -71,8 +75,8 @@ class VisionTimerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        // Channels are created once in VisionApplication.onCreate, which always runs first.
         notificationHelper = NotificationHelper(this)
-        notificationHelper.createChannels()
         overlayManager = OverlayManager(this)
         soundAlertHelper = SoundAlertHelper(this)
 
@@ -127,6 +131,10 @@ class VisionTimerService : Service() {
             .let { flow ->
                 serviceScope.launch {
                     flow.collect { (status, _) ->
+                        // The initial Idle must not overwrite the saved session before restore has read it.
+                        if (restoreJob?.isActive == true && status is TimerStatus.Idle && !engine.isSessionActive) {
+                            return@collect
+                        }
                         // Build on the main thread; only the write runs on the IO lane.
                         val snapshot = SessionSnapshot(
                             status = status,
@@ -134,7 +142,7 @@ class VisionTimerService : Service() {
                             bootCount = currentBootCount(),
                             screenOffAtMs = engine.screenOffAtMs
                         )
-                        applicationScope.launch(sessionWriteDispatcher) {
+                        applicationScope.launch(SessionWriteLane.dispatcher) {
                             runCatching { sessionStore.save(snapshot) }
                         }
                     }
@@ -163,7 +171,8 @@ class VisionTimerService : Service() {
         startForegroundServiceWithNotification()
 
         when (action) {
-            ACTION_RESTORE -> restoreSessionIfNeeded()
+            // onCreate already started the restore; a late RESTORE on a live service must not redo it.
+            ACTION_RESTORE -> if (restoreJob == null) restoreSessionIfNeeded()
 
             ACTION_START -> startTimer()
 
@@ -186,7 +195,8 @@ class VisionTimerService : Service() {
         }
         // A command that cannot produce a live session must not leave a foreground service.
         // Clear the flags first so a command arriving before destruction starts foreground cleanly.
-        if (!engine.isSessionActive && engine.state.value is TimerStatus.Idle) {
+        // RESTORE is exempt: the engine is still Idle while the restore coroutine reads the store.
+        if (action != ACTION_RESTORE && !engine.isSessionActive && engine.state.value is TimerStatus.Idle) {
             sessionStopped = true
             foregroundStarted = false
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -216,7 +226,7 @@ class VisionTimerService : Service() {
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_TIMER)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
         foregroundStarted = false
-        applicationScope.launch(sessionWriteDispatcher) { runCatching { sessionStore.clear() } }
+        applicationScope.launch(SessionWriteLane.dispatcher) { runCatching { sessionStore.clear() } }
         updateWidget(force = true)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -279,10 +289,15 @@ class VisionTimerService : Service() {
     }
 
     private fun restoreSessionIfNeeded() {
-        serviceScope.launch {
+        restoreJob = serviceScope.launch {
+            beforeRestoreLoad?.invoke()
             val snapshot = runCatching { sessionStore.load(currentBootCount()) }.getOrNull()
             if (explicitCommandReceived) return@launch
             if (snapshot == null || !snapshot.isResumable) {
+                // Nothing to resume: drop the foreground notification a RESTORE start posted.
+                sessionStopped = true
+                foregroundStarted = false
+                stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 return@launch
             }
