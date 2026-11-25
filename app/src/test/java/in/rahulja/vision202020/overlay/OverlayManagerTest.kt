@@ -16,7 +16,6 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowSettings
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class OverlayManagerTest {
 
     private lateinit var context: Context
