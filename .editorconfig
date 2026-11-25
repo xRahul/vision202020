@@ -14,6 +14,6 @@ max_line_length = 140
 ktlint_standard_package-name = disabled
 # Composable functions are PascalCase by Compose convention.
 ktlint_function_naming_ignore_when_annotated_with = Composable
-# Existing public lambda parameters (onXChanged, onHoldingChanged) are past tense by Material convention (onCheckedChange-style state callbacks)
-# and are referenced by callers and tests; renaming them is out of scope.
+# Existing public lambda parameters (onXChanged, onHoldingChanged) are project-specific past-tense callback names
+# (Material uses present tense, e.g. onCheckedChange); callers and tests reference them, so renaming is out of scope.
 ktlint_compose_parameter-naming = disabled

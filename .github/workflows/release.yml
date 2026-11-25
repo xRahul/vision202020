@@ -258,8 +258,7 @@ jobs:
           TAG_NAME: ${{ steps.versioning.outputs.tag_name }}
         run: |
           set -euo pipefail
-          git push origin main
-          git push origin "refs/tags/$TAG_NAME"
+          git push --atomic origin main "refs/tags/$TAG_NAME"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
