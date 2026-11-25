@@ -173,13 +173,14 @@ class VisionTimerService : Service() {
             // OS restarted a sticky service. restoreSessionIfNeeded() decides to resume or stop.
             return Service.START_STICKY
         }
-        // TOGGLE and COMPLETE_BREAK set the flag themselves, once restore has finished.
-        if (action != ACTION_RESTORE && action != ACTION_TOGGLE && action != ACTION_COMPLETE_BREAK) {
+        // Commands that act on the restored session set the flag themselves, once restore has finished.
+        // START and STOP are explicit and immediate: they supersede whatever restore would load.
+        if (action == ACTION_START || action == ACTION_STOP) {
             explicitCommandReceived = true
         }
         sessionStopped = false
         // Every path must post a foreground notification promptly (startForegroundService contract).
-        startForegroundServiceWithNotification()
+        if (!startForegroundServiceWithNotification()) return Service.START_NOT_STICKY
 
         when (action) {
             // onCreate already started the restore; a late RESTORE on a live service has nothing to add.
@@ -187,20 +188,20 @@ class VisionTimerService : Service() {
 
             ACTION_START -> startTimer()
 
-            ACTION_PAUSE -> engine.pause()
+            ACTION_PAUSE -> afterRestore { engine.pause() }
 
-            ACTION_RESUME -> engine.resume()
+            ACTION_RESUME -> afterRestore { engine.resume() }
 
-            ACTION_RESET -> {
+            ACTION_RESET -> afterRestore {
                 engine.reset()
                 startTickerIfRunning()
             }
 
             ACTION_STOP -> stopTimer()
 
-            ACTION_SNOOZE -> engine.snooze(currentPrefs.snoozeMinutes * 60)
+            ACTION_SNOOZE -> afterRestore { engine.snooze(currentPrefs.snoozeMinutes * 60) }
 
-            ACTION_TRIGGER_BREAK -> engine.triggerBreak()
+            ACTION_TRIGGER_BREAK -> afterRestore { engine.triggerBreak() }
 
             ACTION_COMPLETE_BREAK -> {
                 // Strict mode: only the break screen, after the hold or confirm, may complete a break.
@@ -247,6 +248,26 @@ class VisionTimerService : Service() {
             applicationScope.launch(SessionWriteLane.dispatcher) { runCatchingCancellable { sessionStore.clear() } }
         }
         return Service.START_STICKY
+    }
+
+    /** Runs [block] against the restored session: immediately when restore is done, else once it finishes. */
+    private fun afterRestore(block: () -> Unit) {
+        if (restoreJob?.isActive != true) {
+            block()
+            return
+        }
+        // Counts as a waiting command so a "nothing to resume" restore does not stop the service under it.
+        pendingToggles++
+        serviceScope.launch {
+            try {
+                restoreJob?.join()
+                explicitCommandReceived = true
+                if (!sessionStopped) block()
+            } finally {
+                pendingToggles--
+                stopIfNoSession()
+            }
+        }
     }
 
     private fun completeBreakGated(fromBreakUi: Boolean) {
@@ -321,21 +342,31 @@ class VisionTimerService : Service() {
     }
 
     @SuppressLint("InlinedApi") // SPECIAL_USE is masked to a safe value by ServiceCompat below API 34.
-    private fun startForegroundServiceWithNotification() {
-        if (foregroundStarted) return
+    private fun startForegroundServiceWithNotification(): Boolean {
+        if (foregroundStarted) return true
         val initialNotification =
             notificationHelper.buildTimerNotification(
                 engine.state.value,
                 currentPrefs.snoozeMinutes,
                 currentPrefs.strictMode
             )
-        ServiceCompat.startForeground(
-            this,
-            NotificationHelper.NOTIFICATION_ID_TIMER,
-            initialNotification,
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-        )
+        try {
+            ServiceCompat.startForeground(
+                this,
+                NotificationHelper.NOTIFICATION_ID_TIMER,
+                initialNotification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } catch (e: IllegalStateException) {
+            // ForegroundServiceStartNotAllowedException (API 31+) is a subclass: a sticky restart
+            // from the background may be refused. Give up quietly instead of crashing.
+            Log.w(TAG, "Foreground start denied; stopping", e)
+            sessionStopped = true
+            stopSelf()
+            return false
+        }
         foregroundStarted = true
+        return true
     }
 
     private fun startTicker() {
@@ -371,7 +402,11 @@ class VisionTimerService : Service() {
             stopTicker()
         } else {
             val current = engine.state.value
-            if (current is TimerStatus.Working && current.pauseReason == PauseReason.SCREEN_OFF) {
+            // A restored session may carry a stale screen-off time whatever its status; clear it now
+            // so a later break completion does not think the screen is off.
+            if (engine.screenOffAtMs != 0L ||
+                (current is TimerStatus.Working && current.pauseReason == PauseReason.SCREEN_OFF)
+            ) {
                 engine.onScreenOn()
                 if (engine.isSessionActive) {
                     startTickerIfRunning()
@@ -400,7 +435,7 @@ class VisionTimerService : Service() {
                 .getOrDefault(currentPrefs)
             engine.updatePreferences(currentPrefs)
             syncInteractiveState()
-            startForegroundServiceWithNotification()
+            if (!startForegroundServiceWithNotification()) return@launch
             startTickerIfRunning()
             handleStateChange(engine.state.value)
         }

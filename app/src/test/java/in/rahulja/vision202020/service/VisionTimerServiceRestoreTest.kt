@@ -83,8 +83,7 @@ class VisionTimerServiceRestoreTest {
         assertFalse(shadowOf(service).isStoppedBySelf)
     }
 
-    @Test
-    fun explicitCommandDuringRestoreClearsStaleSnapshot() {
+    private fun saveRunningWorking() {
         runBlocking {
             store.save(
                 SessionSnapshot(
@@ -92,8 +91,8 @@ class VisionTimerServiceRestoreTest {
                         remainingSeconds = 600,
                         elapsedSeconds = 600,
                         totalSeconds = 1200,
-                        pauseReason = PauseReason.MANUAL,
-                        remainingAtPauseMs = 600_000L
+                        pauseReason = PauseReason.NONE,
+                        deadlineTimestampMs = android.os.SystemClock.elapsedRealtime() + 600_000L
                     ),
                     isSessionActive = true,
                     bootCount = 1,
@@ -101,20 +100,83 @@ class VisionTimerServiceRestoreTest {
                 )
             )
         }
+    }
+
+    private fun command(action: String) = Intent(context, VisionTimerService::class.java).setAction(action)
+
+    @Test
+    fun stopDuringRestoreClearsStaleSnapshot() {
+        saveRunningWorking()
         val controller = Robolectric.buildService(VisionTimerService::class.java, restoreIntent())
         val service = controller.get()
         val gate = CompletableDeferred<Unit>()
         service.beforeRestoreLoad = { gate.await() }
         controller.create().startCommand(0, 1)
-        // A PAUSE on an Idle engine ends the service and skips the restore.
-        controller.withIntent(
-            Intent(context, VisionTimerService::class.java).setAction(VisionTimerService.ACTION_PAUSE)
-        ).startCommand(0, 2)
+        controller.withIntent(command(VisionTimerService.ACTION_STOP)).startCommand(0, 2)
         gate.complete(Unit)
 
         val cleared = awaitCondition { runBlocking { store.load(currentBootCount = 1, nowElapsedMs = 0L) } == null }
 
-        assertTrue("stale resumable snapshot must be cleared", cleared)
+        assertTrue("explicit STOP must drop the saved session", cleared)
+    }
+
+    @Test
+    fun pauseDuringRestoreAppliesToRestoredSession() {
+        saveRunningWorking()
+        val controller = Robolectric.buildService(VisionTimerService::class.java, restoreIntent())
+        val service = controller.get()
+        val gate = CompletableDeferred<Unit>()
+        service.beforeRestoreLoad = { gate.await() }
+        controller.create().startCommand(0, 1)
+        controller.withIntent(command(VisionTimerService.ACTION_PAUSE)).startCommand(0, 2)
+        gate.complete(Unit)
+
+        val paused = awaitCondition {
+            (VisionTimerStateHolder.state.value as? TimerStatus.Working)?.pauseReason == PauseReason.MANUAL
+        }
+
+        assertTrue("PAUSE must apply to the restored session", paused)
+        assertFalse(shadowOf(service).isStoppedBySelf)
+        assertTrue(runBlocking { store.load(currentBootCount = 1, nowElapsedMs = 0L) } != null)
+    }
+
+    @Test
+    fun pauseWithNothingToRestoreStopsTheService() {
+        val controller = Robolectric.buildService(VisionTimerService::class.java, command(VisionTimerService.ACTION_PAUSE))
+        val service = controller.create().startCommand(0, 1).get()
+
+        assertTrue("service should stop itself", awaitCondition { shadowOf(service).isStoppedBySelf })
+    }
+
+    @Test
+    fun restoredRestBreakWithStaleScreenOffTimeCompletesToRunningWork() {
+        // Robolectric's clock starts near zero; a screen-off time of 0 or less would read as "screen on".
+        org.robolectric.shadows.ShadowSystemClock.advanceBy(java.time.Duration.ofMinutes(10))
+        runBlocking {
+            store.save(
+                SessionSnapshot(
+                    status = TimerStatus.RestBreak(
+                        remainingSeconds = 20,
+                        totalSeconds = 20,
+                        breakStartedTimestampMs = android.os.SystemClock.elapsedRealtime()
+                    ),
+                    isSessionActive = true,
+                    bootCount = 1,
+                    screenOffAtMs = android.os.SystemClock.elapsedRealtime() - 1_000L
+                )
+            )
+        }
+        val controller = Robolectric.buildService(VisionTimerService::class.java, restoreIntent())
+        val service = controller.create().startCommand(0, 1).get()
+        assertTrue(awaitCondition { VisionTimerStateHolder.state.value is TimerStatus.RestBreak })
+
+        controller.withIntent(command(VisionTimerService.ACTION_COMPLETE_BREAK)).startCommand(0, 2)
+        val running = awaitCondition {
+            (VisionTimerStateHolder.state.value as? TimerStatus.Working)?.pauseReason == PauseReason.NONE
+        }
+
+        assertTrue("break end must not pause for a screen that is on: ${VisionTimerStateHolder.state.value}", running)
+        assertFalse(shadowOf(service).isStoppedBySelf)
     }
 
     @Test

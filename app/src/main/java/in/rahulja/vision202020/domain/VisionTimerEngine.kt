@@ -136,7 +136,8 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
     }
 
     fun onScreenOff() {
-        screenOffTimestampMs = timeProvider()
+        // A duplicate broadcast or a restore while the screen is off must not reset the off-duration.
+        if (screenOffTimestampMs == 0L) screenOffTimestampMs = timeProvider()
         val current = _state.value
         if (current is TimerStatus.Working && !current.isScreenPaused) {
             _state.value = current.copy(

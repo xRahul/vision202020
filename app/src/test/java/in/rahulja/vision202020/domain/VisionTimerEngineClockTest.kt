@@ -224,21 +224,53 @@ class VisionTimerEngineClockTest {
     }
 
     @Test
-    fun wallClockJumpHasNoEffect() {
-        val wall = FakeTimeSource(currentMillis = 1_700_000_000_000L)
+    fun `restored rest break clears stale screen off time when the screen is on`() {
+        val first = engine()
+        first.start()
+        first.triggerBreak()
+        val snapshot = SessionSnapshot(first.state.value, true, 1, screenOffAtMs = fakeTime.currentMillis - 1000L)
+        val restored = engine()
+        restored.restore(snapshot)
+
+        // Mirrors the service: the screen is interactive, so it reports screen-on after restore.
+        restored.onScreenOn()
+        assertEquals(0L, restored.screenOffAtMs)
+        fakeTime.advanceSeconds(21)
+        restored.tickSecond()
+
+        val state = restored.state.value as TimerStatus.Working
+        assertFalse(state.isScreenPaused)
+    }
+
+    @Test
+    fun `duplicate screen off keeps the first off time`() {
         val engine = engine()
         engine.start()
-        fakeTime.advanceSeconds(30)
-        engine.tickSecond()
-        val before = engine.state.value as TimerStatus.Working
+        engine.onScreenOff()
+        val first = engine.screenOffAtMs
+        fakeTime.advanceMinutes(6)
 
-        // User sets the wall clock forward a day and back: the engine never reads it.
-        wall.advanceMinutes(24 * 60)
-        engine.tickSecond()
-        wall.currentMillis -= 48L * 60 * 60 * 1000
-        engine.tickSecond()
+        engine.onScreenOff()
+        assertEquals(first, engine.screenOffAtMs)
+        engine.onScreenOn()
 
-        assertEquals(before, engine.state.value)
-        assertEquals(1170, (engine.state.value as TimerStatus.Working).remainingSeconds)
+        val state = engine.state.value as TimerStatus.Working
+        assertEquals("natural break still counted", 1200, state.remainingSeconds)
+        assertFalse(state.isScreenPaused)
+    }
+
+    @Test
+    fun `restore while screen off keeps the restored off time`() {
+        val first = engine()
+        first.start()
+        first.onScreenOff()
+        val snapshot = SessionSnapshot(first.state.value, true, 1, first.screenOffAtMs)
+        fakeTime.advanceMinutes(6)
+
+        val restored = engine()
+        restored.restore(snapshot)
+        restored.onScreenOff()
+
+        assertEquals(snapshot.screenOffAtMs, restored.screenOffAtMs)
     }
 }
