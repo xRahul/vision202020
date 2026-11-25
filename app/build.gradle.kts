@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.cyclonedx.bom)
     alias(libs.plugins.aboutlibraries)
+    alias(libs.plugins.kover)
 }
 
 val versionProps = Properties().apply {
@@ -115,6 +116,8 @@ android {
 
     lint {
         sarifReport = true
+        warningsAsErrors = true
+        abortOnError = true
     }
 
     testOptions {
@@ -127,6 +130,21 @@ android {
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
+    }
+}
+
+kover {
+    reports {
+        variant("debug") {
+            xml {
+                onCheck = false
+            }
+            verify {
+                rule {
+                    minBound(50)
+                }
+            }
+        }
     }
 }
 

@@ -2,4 +2,12 @@
 <lint>
     <!-- "20-20-20" is a fixed brand name here, not a numeric range. -->
     <issue id="TypographyDashes" severity="ignore" />
+    <!--
+        Version-freshness checks depend on the date and the network, so a new upstream
+        release would break an unchanged commit once warnings are errors. Upgrade deliberately.
+    -->
+    <issue id="OldTargetApi" severity="ignore" />
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
 </lint>
