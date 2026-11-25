@@ -56,6 +56,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -389,6 +390,7 @@ private fun BreakActionButtons(
     val currentOnSkip by rememberUpdatedState(onSkip)
     val currentOnHoldingChanged by rememberUpdatedState(onHoldingChanged)
     val holdSkipLabel = stringResource(R.string.break_hold_skip)
+    val skipActionLabel = stringResource(R.string.break_skip_action)
     var confirmingSkip by remember { mutableStateOf(false) }
 
     if (confirmingSkip) {
@@ -432,7 +434,7 @@ private fun BreakActionButtons(
                         contentDescription = holdSkipLabel
                         // A two-second hold is not possible with TalkBack; offer a confirmed skip instead.
                         customActions = listOf(
-                            CustomAccessibilityAction(holdSkipLabel) {
+                            CustomAccessibilityAction(skipActionLabel) {
                                 confirmingSkip = true
                                 true
                             }
@@ -488,8 +490,10 @@ private fun BreakActionButtons(
 
 @Composable
 private fun SkipConfirmation(onConfirm: () -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+    val confirmTitle = stringResource(R.string.break_skip_confirm_title)
     Column(
-        modifier = modifier,
+        // Announce the confirm to TalkBack when it replaces the action row.
+        modifier = modifier.semantics { paneTitle = confirmTitle },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(

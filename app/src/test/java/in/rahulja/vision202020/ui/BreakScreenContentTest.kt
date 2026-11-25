@@ -120,12 +120,16 @@ class BreakScreenContentTest {
 
         val node = composeTestRule.onNodeWithContentDescription("Hold 2s to Skip")
         val action = node.fetchSemanticsNode().config[SemanticsActions.CustomActions]
-            .single { it.label == "Hold 2s to Skip" }
+            .single { it.label == "Skip break…" }
 
         composeTestRule.runOnUiThread { action.action() }
         composeTestRule.waitForIdle()
         assertFalse("opening the confirm must not skip", skipped)
         composeTestRule.onNodeWithText("Skip this break?").assertIsDisplayed()
+        assertTrue(
+            composeTestRule.onAllNodes(androidx.compose.ui.test.SemanticsMatcher.keyIsDefined(SemanticsProperties.PaneTitle))
+                .fetchSemanticsNodes().any { it.config[SemanticsProperties.PaneTitle] == "Skip this break?" }
+        )
 
         composeTestRule.onNodeWithText("Keep resting").performClick()
         assertFalse("cancel must not skip", skipped)

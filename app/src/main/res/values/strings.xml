@@ -121,6 +121,7 @@
     <string name="break_snooze">Snooze %dm</string>
     <string name="break_hold_skip">Hold 2s to Skip</string>
     <string name="break_keep_holding">Keep holding\u2026</string>
+    <string name="break_skip_action">Skip break…</string>
     <string name="break_skip">Skip Break</string>
     <string name="break_skip_confirm_title">Skip this break?</string>
     <string name="break_skip_confirm_message">Your eyes still need the rest.</string>
