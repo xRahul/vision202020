@@ -106,7 +106,10 @@ class VisionTileService : TileService() {
     }
 
     private fun updateTile(status: TimerStatus) {
-        val tile = qsTile ?: return
+        applyStatus(qsTile ?: return, status)
+    }
+
+    internal fun applyStatus(tile: Tile, status: TimerStatus) {
         tile.icon = Icon.createWithResource(this, R.drawable.ic_stat_vision)
         val (state, subtitle) = mapStatusToTileState(this, status)
         if (state != lastState || subtitle != lastSubtitle) {
@@ -115,6 +118,9 @@ class VisionTileService : TileService() {
             tile.state = state
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 tile.subtitle = subtitle
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                tile.stateDescription = subtitle
             }
             tile.updateTile()
         }
@@ -142,7 +148,7 @@ class VisionTileService : TileService() {
             )
 
             is TimerStatus.Snoozed -> Pair(
-                Tile.STATE_INACTIVE,
+                Tile.STATE_ACTIVE,
                 context.getString(
                     R.string.tile_snoozed,
                     NotificationHelper.formatTime(status.remainingSeconds)

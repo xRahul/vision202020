@@ -70,6 +70,12 @@ class WidgetConfigurationTest {
     }
 
     @Test
+    fun widgetUsesResponsiveSizes() {
+        val mode = VisionGlanceWidget().sizeMode
+        assertTrue("Widget must be responsive", mode is androidx.glance.appwidget.SizeMode.Responsive)
+    }
+
+    @Test
     fun testVisionGlanceColorProvidersConfigured() {
         assertNotNull(VisionGlanceColorProviders)
     }

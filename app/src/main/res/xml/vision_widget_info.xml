@@ -4,6 +4,8 @@
     tools:targetApi="s"
     android:minWidth="140dp"
     android:minHeight="70dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="70dp"
     android:targetCellWidth="2"
     android:targetCellHeight="1"
     android:updatePeriodMillis="0"

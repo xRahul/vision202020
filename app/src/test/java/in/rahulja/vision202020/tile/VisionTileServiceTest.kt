@@ -8,6 +8,8 @@ import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.domain.VisionTimerStateHolder
 import `in`.rahulja.vision202020.ui.breakui.BreakActivity
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -16,6 +18,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 class VisionTileServiceTest {
@@ -63,8 +66,26 @@ class VisionTileServiceTest {
             deadlineTimestampMs = 1000L
         )
         val (state, subtitle) = VisionTileService.mapStatusToTileState(context, status)
-        assertEquals(Tile.STATE_INACTIVE, state)
+        assertEquals(Tile.STATE_ACTIVE, state)
         assertEquals("Snoozed (04:00)", subtitle)
+    }
+
+    @Test
+    fun snoozedIsActive() {
+        val status = TimerStatus.Snoozed(remainingSeconds = 240, totalSeconds = 300, deadlineTimestampMs = 1000L)
+        assertEquals(Tile.STATE_ACTIVE, VisionTileService.mapStatusToTileState(context, status).first)
+    }
+
+    @Test
+    @Config(sdk = [30])
+    fun tileSetsStateDescriptionOnApi30() {
+        val tile = Robolectric.setupService(VisionTileService::class.java)
+        val fake = mockk<Tile>(relaxed = true)
+
+        tile.applyStatus(fake, TimerStatus.Idle)
+
+        verify { fake.stateDescription = "Tap to start" }
+        verify { fake.updateTile() }
     }
 
     @Test

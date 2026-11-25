@@ -124,4 +124,5 @@
     <string name="widget_skip">Skip</string>
     <string name="widget_rest_now">Rest Now</string>
     <string name="widget_resume">Resume</string>
+    <string name="widget_open_break">Open</string>
 </resources>

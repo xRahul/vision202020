@@ -1,16 +1,21 @@
 package `in`.rahulja.vision202020.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.Button
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalSize
 import androidx.glance.action.ActionParameters
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
@@ -31,63 +36,33 @@ import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.domain.TimerStatus
-import `in`.rahulja.vision202020.service.NotificationHelper
 import `in`.rahulja.vision202020.service.VisionTimerService
 import `in`.rahulja.vision202020.ui.breakui.BreakLauncher
+import `in`.rahulja.vision202020.ui.main.MainActivity
+import `in`.rahulja.vision202020.ui.text.TimerStatusText
 import `in`.rahulja.vision202020.ui.theme.VisionGlanceColorProviders
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 
 class VisionGlanceWidget : GlanceAppWidget() {
 
+    override val sizeMode = SizeMode.Responsive(setOf(SMALL, LARGE))
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val status = VisionTimerService.timerStatus.value
-        val (titleText, buttonText) = when (status) {
-            is TimerStatus.Working -> Pair(
-                if (status.isScreenPaused) {
-                    context.getString(
-                        R.string.widget_paused,
-                        NotificationHelper.formatTime(status.remainingSeconds)
-                    )
-                } else {
-                    context.getString(
-                        R.string.widget_remaining,
-                        NotificationHelper.formatTime(status.remainingSeconds)
-                    )
-                },
-                context.getString(
-                    if (status.isScreenPaused) R.string.widget_resume else R.string.action_pause
-                )
-            )
-
-            is TimerStatus.RestBreak -> Pair(
-                context.getString(R.string.widget_break, status.remainingSeconds),
-                context.getString(R.string.widget_skip)
-            )
-
-            is TimerStatus.Snoozed -> Pair(
-                context.getString(
-                    R.string.widget_snoozed,
-                    NotificationHelper.formatTime(status.remainingSeconds)
-                ),
-                context.getString(R.string.widget_rest_now)
-            )
-
-            is TimerStatus.Idle -> Pair(
-                context.getString(R.string.widget_idle),
-                context.getString(R.string.widget_start)
-            )
-        }
-
-        val strictFlow = PreferencesRepositoryImpl(context.dataStore).preferencesFlow.map { it.strictMode }
+        val prefsFlow = PreferencesRepositoryImpl(context.dataStore).preferencesFlow
+        // Read the real strict flag up front so the first composition never assumes non-strict.
+        val initialPrefs = prefsFlow.first()
 
         provideContent {
-            val strictMode by strictFlow.collectAsState(initial = false)
+            val status by VisionTimerService.timerStatus.collectAsState()
+            val prefs by prefsFlow.collectAsState(initial = initialPrefs)
+            val strictMode = prefs.strictMode
             // Strict mode: a tap during a break must not skip, so it opens the break screen instead.
             val buttonAction = if (strictMode && status is TimerStatus.RestBreak) {
                 actionStartActivity(BreakLauncher.intent(context))
             } else {
                 actionRunCallback<WidgetToggleActionCallback>()
             }
+            val showTitleRow = LocalSize.current.height >= LARGE.height
             GlanceTheme(colors = VisionGlanceColorProviders) {
                 Column(
                     modifier = GlanceModifier
@@ -99,17 +74,20 @@ class VisionGlanceWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = context.getString(R.string.widget_title),
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                    if (showTitleRow) {
+                        Text(
+                            text = context.getString(R.string.widget_title),
+                            modifier = GlanceModifier.clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
+                            style = TextStyle(
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                         )
-                    )
-                    Spacer(modifier = GlanceModifier.height(4.dp))
+                        Spacer(modifier = GlanceModifier.height(4.dp))
+                    }
                     Text(
-                        text = titleText,
+                        text = TimerStatusText.title(context, status),
                         style = TextStyle(
                             color = GlanceTheme.colors.onSurface,
                             fontSize = 18.sp,
@@ -118,12 +96,17 @@ class VisionGlanceWidget : GlanceAppWidget() {
                     )
                     Spacer(modifier = GlanceModifier.height(8.dp))
                     Button(
-                        text = buttonText,
+                        text = TimerStatusText.actionLabel(context, status, strictMode),
                         onClick = buttonAction
                     )
                 }
             }
         }
+    }
+
+    private companion object {
+        val SMALL = DpSize(110.dp, 70.dp)
+        val LARGE = DpSize(180.dp, 110.dp)
     }
 }
 
