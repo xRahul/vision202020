@@ -6,7 +6,9 @@ import android.content.Intent
 import android.os.Looper
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
+import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.SessionStore
+import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.data.sessionDataStore
 import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.SessionSnapshot
@@ -49,24 +51,22 @@ class BootReceiverTest {
         screenOffAtMs = 0L
     )
 
-    private fun deliver(action: String) {
-        BootReceiver().onReceive(context, Intent(action))
-        waitForReceiver()
+    private fun deliver(action: String, receiver: BootReceiver = BootReceiver()) {
+        receiver.onReceive(context, Intent(action))
+        // Deterministic: wait for the receiver's own work, then run what it posted to the main looper.
+        runBlocking { receiver.workJob?.join() }
+        shadowOf(Looper.getMainLooper()).idle()
     }
 
-    /** The receiver works on Dispatchers.IO; poll until a service start shows up or time runs out. */
-    private fun waitForReceiver() {
-        val deadline = System.currentTimeMillis() + 3_000
-        val app = context as Application
-        while (System.currentTimeMillis() < deadline) {
-            shadowOf(Looper.getMainLooper()).idle()
-            if (shadowOf(app).peekNextStartedService() != null) return
-            Thread.sleep(25)
+    private fun setStartOnBoot(enabled: Boolean) {
+        runBlocking {
+            PreferencesRepositoryImpl(context.dataStore).updateStartOnBoot(enabled)
         }
     }
 
     @Test
     fun bootClearsSnapshot() {
+        setStartOnBoot(false)
         setBootCount(2)
         runBlocking { store.save(working(bootCount = 2)) }
 
@@ -78,6 +78,7 @@ class BootReceiverTest {
 
     @Test
     fun packageReplacedAfterRebootDoesNotRestore() {
+        setStartOnBoot(false)
         runBlocking { store.save(working(bootCount = 1)) }
         setBootCount(2)
 
@@ -96,5 +97,44 @@ class BootReceiverTest {
         val started = shadowOf(context as Application).nextStartedService
         assertNotNull(started)
         assertEquals(VisionTimerService.ACTION_RESTORE, started.action)
+    }
+
+    @Test
+    fun bootWithStartOnBootStartsTheTimerAfterClearing() {
+        setStartOnBoot(true)
+        setBootCount(2)
+        runBlocking { store.save(working(bootCount = 2)) }
+
+        deliver(Intent.ACTION_BOOT_COMPLETED)
+
+        assertNull(runBlocking { store.load(currentBootCount = 2, nowElapsedMs = 0L) })
+        assertEquals(VisionTimerService.ACTION_START, shadowOf(context as Application).nextStartedService.action)
+    }
+
+    @Test
+    fun bootWithoutStartOnBootStartsNothing() {
+        setStartOnBoot(false)
+        setBootCount(2)
+
+        deliver(Intent.ACTION_BOOT_COMPLETED)
+
+        assertNull(shadowOf(context as Application).peekNextStartedService())
+    }
+
+    @Test
+    fun failingWorkDoesNotCrashTheProcess() {
+        val crashes = mutableListOf<Throwable>()
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, e -> crashes += e }
+        try {
+            val receiver = object : BootReceiver() {
+                override suspend fun handle(context: Context, action: String): Unit = throw java.io.IOException("datastore unavailable")
+            }
+            deliver(Intent.ACTION_BOOT_COMPLETED, receiver)
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previous)
+        }
+
+        assertEquals(emptyList<Throwable>(), crashes)
     }
 }

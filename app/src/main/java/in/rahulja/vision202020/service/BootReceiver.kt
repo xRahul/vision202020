@@ -3,6 +3,7 @@ package `in`.rahulja.vision202020.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.SessionStore
 import `in`.rahulja.vision202020.data.SessionWriteLane
@@ -11,6 +12,7 @@ import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.data.sessionDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
@@ -18,7 +20,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
-class BootReceiver : BroadcastReceiver() {
+open class BootReceiver : BroadcastReceiver() {
+
+    /** The in-flight work of the last broadcast; lets tests wait for completion instead of sleeping. */
+    internal var workJob: Job? = null
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
@@ -27,9 +32,11 @@ class BootReceiver : BroadcastReceiver() {
         // goAsync() keeps the process alive until the preference read completes.
         val pendingResult = goAsync()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        scope.launch {
+        workJob = scope.launch {
             try {
-                withTimeout(WORK_TIMEOUT_MS) { handle(context, action) }
+                // A DataStore IOException must end here, not crash the process from a detached coroutine.
+                runCatchingCancellable { withTimeout(WORK_TIMEOUT_MS) { handle(context, action) } }
+                    .onFailure { Log.w(TAG, "Boot work failed for $action", it) }
             } finally {
                 pendingResult?.finish()
                 scope.cancel()
@@ -37,7 +44,7 @@ class BootReceiver : BroadcastReceiver() {
         }
     }
 
-    private suspend fun handle(context: Context, action: String) {
+    internal open suspend fun handle(context: Context, action: String) {
         val sessionStore = SessionStore(context.applicationContext.sessionDataStore)
         if (action == Intent.ACTION_BOOT_COMPLETED) {
             // elapsedRealtime restarted: any saved session is from the previous boot. Clear it
@@ -61,6 +68,8 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     private companion object {
+        const val TAG = "BootReceiver"
+
         /** A broadcast has about 10s; finish() must run before the system gives up on goAsync. */
         const val WORK_TIMEOUT_MS = 8_000L
     }
