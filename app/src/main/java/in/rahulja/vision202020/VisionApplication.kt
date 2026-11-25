@@ -6,6 +6,7 @@ import `in`.rahulja.vision202020.data.SessionStore
 import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.data.sessionDataStore
 import `in`.rahulja.vision202020.service.NotificationHelper
+import `in`.rahulja.vision202020.service.runCatchingCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,7 +26,7 @@ class VisionApplication : Application() {
         NotificationHelper(this).createChannels()
         applicationScope.launch {
             // Best effort: a failed legacy clear is retried on the next launch.
-            runCatching { SessionStore(sessionDataStore).clearLegacy(dataStore) }
+            runCatchingCancellable { SessionStore(sessionDataStore).clearLegacy(dataStore) }
         }
     }
 }
