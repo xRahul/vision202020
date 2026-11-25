@@ -32,10 +32,11 @@ Extended screen time on phones and laptops drastically decreases natural blinkin
 ### Key Features
 - **Zero Screen Clutter During Work:** While your 20-minute timer counts down, **nothing floats over your apps**. No badges, no floating bubbles, no reading distractions.
 - **20-Second Guided Relaxation:** When the work timer completes, a soothing 20-second breathing overlay prompts you to look 20 feet away, blink gently, and relax your ciliary muscles before automatically dismissing itself.
-- **Screen-Aware Timer:** Ticks only while your screen is on. Pauses immediately when the screen turns off and auto-resets if your phone stays locked for ≥ 5 minutes (Natural Break).
-- **Lock-Screen Alert Delivery:** Wakes up your sleeping display with guided relaxation over keyguard Google Clock-alarm style (`setShowWhenLocked`).
+- **Screen-Aware Timer:** Ticks only while your screen is on. Uses a monotonic clock, so changing the system clock has no effect. Pauses immediately when the screen turns off and auto-resets if your phone stays locked for ≥ 5 minutes (Natural Break).
+- **Lock-Screen Alert Delivery:** While the device is locked, the break arrives as a full-screen-intent notification, Google Clock-alarm style. If you unlock mid-break, the overlay takes over. On Android 14+ you may need to allow full-screen notifications; the app shows a permission card when that is off.
+- **Strict Mode:** Hold the skip button for 2 seconds to end a break early, on every surface. The break notification shows only Snooze. Tapping the tile or widget during a strict break opens the break screen. Snooze stays available. TalkBack users get a custom action that asks for confirmation.
 - **Quick Settings Tile:** One-tap toggle directly in your notification shade.
-- **Home Screen Widget:** Interactive Jetpack Glance widget showing live remaining time with start/pause/resume controls.
+- **Home Screen Widget:** Interactive Jetpack Glance widget that updates live with the remaining time with start/pause/resume controls.
 - **Notification-Only Mode:** Optional sound/vibration reminder for users who prefer zero visual blockers.
 - **100% Offline & Private:** Zero network permissions (`android.permission.INTERNET` is not included in the manifest). No tracking, no ads.
 
@@ -86,6 +87,8 @@ The `.sha256.sigstore.json` bundle signs the checksum file, not the APK. Verify 
 
 Android Auto Backup is enabled (`android:allowBackup="true"`). Android may include app preferences in the device's encrypted cloud backup. The app itself never uploads anything. Disable device backup for this app in Android settings if you do not want that.
 
+The saved timer session lives in its own DataStore file and is excluded from cloud backup and device transfer, as is the crash log. A session does not survive a reboot (it is tied to the boot count), and sessions saved by older app versions are discarded after an update.
+
 ### Permissions
 
 | Permission | Why it is used |
@@ -95,7 +98,7 @@ Android Auto Backup is enabled (`android:allowBackup="true"`). Android may inclu
 | `SYSTEM_ALERT_WINDOW` | Draws the 20-second eye-rest overlay above other apps. |
 | `POST_NOTIFICATIONS` | Shows the timer notification and break prompts on Android 13+. |
 | `USE_FULL_SCREEN_INTENT` | Delivers the lock-screen break alert like an alarm. |
-| `RECEIVE_BOOT_COMPLETED` | Restores the timer after a device reboot. |
+| `RECEIVE_BOOT_COMPLETED` | Restarts the timer service after a device reboot. The previous session is not restored. |
 | `VIBRATE` | Optional vibration reminder. |
 | `WAKE_LOCK` | Added by Glance's WorkManager dependency so home-screen widget updates can finish. The app does not acquire wake locks directly. |
 | `in.rahulja.vision202020.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | App-internal permission for non-exported dynamic receivers. |
@@ -113,8 +116,14 @@ Android Auto Backup is enabled (`android:allowBackup="true"`). Android may inclu
 git clone git@github.com:xRahul/vision202020.git
 cd vision202020
 
-# Run unit tests
+# Run unit tests (no device needed)
 ./gradlew testDebugUnitTest
+
+# Check formatting and lint (lint warnings fail the build)
+./gradlew spotlessCheck lintDebug
+
+# Check the coverage floor (Kover, 50% line minimum)
+./gradlew koverVerifyDebug
 
 # Build debug APK
 ./gradlew assembleDebug
@@ -128,6 +137,8 @@ Version code and name are read from `version.properties` (overridable with
 builds the correct identity. A release APK is only signed when a keystore is
 provided via `KEYSTORE_FILE`/`KEYSTORE_PASSWORD`/`KEY_ALIAS`/`KEY_PASSWORD`;
 otherwise Gradle emits an unsigned APK instead of silently using the debug key.
+
+Release builds disable `vcsInfo`, so APKs are reproducible from the first release after this change. The F-Droid recipe for v1.1.8 predates it and will not match.
 
 The APKs will be located in:
 `app/build/outputs/apk/debug/` and `app/build/outputs/apk/release/`.

@@ -11,9 +11,20 @@
 ```bash
 ./gradlew spotlessCheck
 ./gradlew testDebugUnitTest
+./gradlew koverVerifyDebug
 ./gradlew lintDebug
 ./gradlew assembleDebug
 ```
+
+Unit tests run on the JVM and need no device. Lint treats warnings as errors. `koverVerifyDebug` fails if line coverage drops below the 50% floor set in `app/build.gradle.kts`.
+
+Emulator smoke tests need a device or emulator:
+
+```bash
+./gradlew connectedDebugAndroidTest
+```
+
+CI runs them on an API 35 emulator (`.github/workflows/instrumented.yml`).
 
 Formatting uses Spotless with ktlint and Compose rules. Fix formatting with:
 
