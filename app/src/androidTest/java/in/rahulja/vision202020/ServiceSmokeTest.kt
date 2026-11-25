@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import `in`.rahulja.vision202020.service.NotificationHelper
 import `in`.rahulja.vision202020.service.VisionTimerService
+import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -21,6 +22,12 @@ class ServiceSmokeTest {
     private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     private fun timerNotificationPosted() = manager.activeNotifications.any { it.id == NotificationHelper.NOTIFICATION_ID_TIMER }
+
+    @After
+    fun tearDown() {
+        VisionTimerService.stop(context)
+        SmokeSupport.waitFor { !timerNotificationPosted() }
+    }
 
     @Test
     fun startPostsForegroundNotificationAndStopRemovesIt() {
