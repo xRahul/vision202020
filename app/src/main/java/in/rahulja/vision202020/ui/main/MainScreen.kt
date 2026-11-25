@@ -351,15 +351,15 @@ private fun TimerProgressCircle(
         )
     }
 
-    // Above one minute the spoken text rounds down to whole minutes, so it only changes when
-    // the minute changes and TalkBack is not re-triggered every second.
+    // Above one minute the spoken text rounds up to whole minutes so it never understates, and it only
+    // changes when the minute changes so TalkBack is not re-triggered every second.
     val spokenSeconds = when (status) {
         is TimerStatus.Working -> status.remainingSeconds
         is TimerStatus.Snoozed -> status.remainingSeconds
         is TimerStatus.RestBreak -> status.remainingSeconds
         is TimerStatus.Idle -> preferences.workDurationMinutes * 60
     }
-    val spokenDescription = spokenTimeRemaining(if (spokenSeconds > 60) spokenSeconds / 60 * 60 else spokenSeconds)
+    val spokenDescription = spokenTimeRemaining(if (spokenSeconds > 60) (spokenSeconds + 59) / 60 * 60 else spokenSeconds)
 
     Box(
         contentAlignment = Alignment.Center,

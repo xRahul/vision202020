@@ -199,12 +199,12 @@ class MainScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithContentDescription("5 minutes remaining").assertExists()
+        composeTestRule.onNodeWithContentDescription("6 minutes remaining").assertExists()
     }
 
     @Test
     @Config(qualifiers = "w392dp-h800dp-port")
-    fun spokenDescriptionRoundsDownToWholeMinutesAboveSixtySeconds() {
+    fun spokenDescriptionRoundsUpToWholeMinutesAboveSixtySeconds() {
         var remaining by mutableIntStateOf(330)
         composeTestRule.setContent {
             VisionTheme {
@@ -228,12 +228,22 @@ class MainScreenTest {
             }
         }
 
-        remaining = 325
+        composeTestRule.onNodeWithContentDescription("6 minutes remaining").assertExists()
+        remaining = 301
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("6 minutes remaining").assertExists()
+        remaining = 300
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithContentDescription("5 minutes remaining").assertExists()
         remaining = 299
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithContentDescription("4 minutes remaining").assertExists()
+        composeTestRule.onNodeWithContentDescription("5 minutes remaining").assertExists()
+        remaining = 119
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("2 minutes remaining").assertExists()
+        remaining = 61
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("2 minutes remaining").assertExists()
         remaining = 59
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithContentDescription("59 seconds remaining").assertExists()
