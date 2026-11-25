@@ -40,4 +40,10 @@ class BreakActivityTest {
             }
         }
     }
+
+    @Test
+    fun skipIsIgnoredUntilPreferencesHaveLoaded() {
+        org.junit.Assert.assertFalse(`in`.rahulja.vision202020.ui.breakui.canSkip(preferencesLoaded = false))
+        assertTrue(`in`.rahulja.vision202020.ui.breakui.canSkip(preferencesLoaded = true))
+    }
 }

@@ -20,6 +20,7 @@ import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.VisionTimerService
 import `in`.rahulja.vision202020.ui.theme.VisionTheme
+import kotlinx.coroutines.flow.map
 
 class BreakActivity : ComponentActivity() {
 
@@ -38,8 +39,11 @@ class BreakActivity : ComponentActivity() {
 
         setContent {
             val status by VisionTimerService.timerStatus.collectAsStateWithLifecycle()
-            val preferences by repository.preferencesFlow
-                .collectAsStateWithLifecycle(initialValue = UserPreferences())
+            // Null until DataStore emits: the defaults (strict off) must never authorize a skip.
+            val loadedPreferences by repository.preferencesFlow
+                .map<UserPreferences, UserPreferences?> { it }
+                .collectAsStateWithLifecycle(initialValue = null)
+            val preferences = loadedPreferences ?: UserPreferences()
             // Only finish after a break was actually observed: a cold process starts at
             // Idle and must not close the screen before the service restores its state.
             var sawBreak by remember { mutableStateOf(status is TimerStatus.RestBreak) }
@@ -66,8 +70,10 @@ class BreakActivity : ComponentActivity() {
                     strictMode = preferences.strictMode,
                     snoozeMinutes = preferences.snoozeMinutes,
                     onSkip = {
-                        if (breakStatus != null) VisionTimerService.completeBreak(this, fromBreakUi = true)
-                        finish()
+                        if (canSkip(loadedPreferences != null)) {
+                            if (breakStatus != null) VisionTimerService.completeBreak(this, fromBreakUi = true)
+                            finish()
+                        }
                     },
                     onSnooze = {
                         if (breakStatus != null) VisionTimerService.snooze(this)
@@ -96,3 +102,9 @@ class BreakActivity : ComponentActivity() {
         }
     }
 }
+
+/**
+ * A skip that arrives before preferences load cannot be judged against strict mode, so it is ignored.
+ * The break screen is the only place allowed to send `fromBreakUi = true`.
+ */
+internal fun canSkip(preferencesLoaded: Boolean): Boolean = preferencesLoaded
