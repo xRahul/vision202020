@@ -15,6 +15,7 @@ object CrashLogWriter {
 
     const val FILE_NAME = "last-crash.txt"
 
+    @Volatile
     private var appContext: Context? = null
 
     fun file(context: Context): File = File(File(context.filesDir, "crash-logs"), FILE_NAME)
@@ -34,12 +35,19 @@ object CrashLogWriter {
         target.parentFile?.mkdirs()
         val timestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
             .format(Date())
-        target.writeText(
-            buildString {
-                appendLine("time=$timestamp")
-                appendLine("thread=${thread.name}")
-                appendLine(Log.getStackTraceString(throwable))
-            }
-        )
+        val content = buildString {
+            appendLine("time=$timestamp")
+            appendLine("thread=${thread.name}")
+            appendLine(Log.getStackTraceString(throwable))
+        }
+        // Write to a temp file then rename so a failure mid-write keeps the previous log.
+        val temp = File(target.parentFile, "$FILE_NAME.tmp")
+        try {
+            temp.writeText(content)
+            if (!temp.renameTo(target)) error("rename failed")
+        } catch (t: Throwable) {
+            temp.delete()
+            throw t
+        }
     }
 }

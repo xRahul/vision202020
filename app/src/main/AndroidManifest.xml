@@ -41,6 +41,8 @@
             android:turnScreenOn="true"
             tools:targetApi="27"
             android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen" />
 

@@ -50,6 +50,15 @@
     <string name="cd_back">Back</string>
     <string name="duration_minutes_short">%dm</string>
     <string name="duration_seconds_short">%ds</string>
+    <plurals name="a11y_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="a11y_seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+    <string name="a11y_time_remaining">%s remaining</string>
     <string name="rest_seconds_value">%ds</string>
     <string name="idle_time_value">%d:00</string>
 

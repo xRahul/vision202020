@@ -1,7 +1,11 @@
 package `in`.rahulja.vision202020.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -168,5 +172,67 @@ class MainScreenTest {
 
         composeTestRule.onNodeWithText("Pause").performClick()
         assertTrue("onPause should be triggered", pauseClicked)
+    }
+
+    @Test
+    @Config(qualifiers = "w392dp-h800dp-port")
+    fun timerHasSpokenDescription() {
+        composeTestRule.setContent {
+            VisionTheme {
+                MainScreen(
+                    status = TimerStatus.Working(remainingSeconds = 330, elapsedSeconds = 0, totalSeconds = 1200),
+                    preferences = UserPreferences(),
+                    hasOverlayPermission = true,
+                    hasNotificationPermission = true,
+                    showFullScreenIntentCard = false,
+                    onStart = {},
+                    onPause = {},
+                    onResume = {},
+                    onReset = {},
+                    onStop = {},
+                    onTriggerBreak = {},
+                    onOpenSettings = {},
+                    onRequestOverlayPermission = {},
+                    onRequestNotificationPermission = {},
+                    onRequestFullScreenIntent = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("5 minutes 30 seconds remaining").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w392dp-h800dp-port")
+    fun spokenDescriptionStaysStableWithinAMinuteAboveSixtySeconds() {
+        var remaining by mutableIntStateOf(330)
+        composeTestRule.setContent {
+            VisionTheme {
+                MainScreen(
+                    status = TimerStatus.Working(remainingSeconds = remaining, elapsedSeconds = 0, totalSeconds = 1200),
+                    preferences = UserPreferences(),
+                    hasOverlayPermission = true,
+                    hasNotificationPermission = true,
+                    showFullScreenIntentCard = false,
+                    onStart = {},
+                    onPause = {},
+                    onResume = {},
+                    onReset = {},
+                    onStop = {},
+                    onTriggerBreak = {},
+                    onOpenSettings = {},
+                    onRequestOverlayPermission = {},
+                    onRequestNotificationPermission = {},
+                    onRequestFullScreenIntent = {}
+                )
+            }
+        }
+
+        remaining = 325
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("5 minutes 30 seconds remaining").assertExists()
+        remaining = 59
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("59 seconds remaining").assertExists()
     }
 }

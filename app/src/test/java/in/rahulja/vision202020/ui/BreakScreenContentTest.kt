@@ -1,6 +1,12 @@
 package `in`.rahulja.vision202020.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -129,5 +135,33 @@ class BreakScreenContentTest {
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Skip").performClick()
         assertTrue("confirming must call onSkip", skipped)
+    }
+
+    @Test
+    @Config(qualifiers = "w392dp-h800dp-port")
+    fun countdownIsPoliteLiveRegion() {
+        var remaining by mutableIntStateOf(15)
+        composeTestRule.setContent {
+            VisionTheme {
+                BreakScreenContent(
+                    remainingSeconds = remaining,
+                    totalSeconds = 20,
+                    strictMode = false,
+                    onSkip = {},
+                    onSnooze = {}
+                )
+            }
+        }
+
+        val polite = SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+        composeTestRule.onNode(polite).assertExists()
+        composeTestRule.onNodeWithContentDescription("15 seconds remaining").assertExists()
+        // Same 5-second bucket: no new announcement text.
+        remaining = 14
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("15 seconds remaining").assertExists()
+        remaining = 10
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("10 seconds remaining").assertExists()
     }
 }

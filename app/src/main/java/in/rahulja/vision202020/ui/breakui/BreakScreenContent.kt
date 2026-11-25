@@ -51,9 +51,11 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +65,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.rahulja.vision202020.R
+import `in`.rahulja.vision202020.ui.spokenTimeRemaining
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Strict mode requires an actual two-second hold, not a platform long-press (~500 ms). */
@@ -348,7 +351,15 @@ private fun BreakCountdownCircle(
             strokeWidth = 8.dp
         )
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val announcedSeconds = (remainingSeconds.coerceAtLeast(0) + 4) / 5 * 5
+        val spokenDescription = spokenTimeRemaining(announcedSeconds)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.semantics(mergeDescendants = true) {
+                contentDescription = spokenDescription
+                liveRegion = LiveRegionMode.Polite
+            }
+        ) {
             Text(
                 text = "$remainingSeconds",
                 fontSize = numberTextSize,

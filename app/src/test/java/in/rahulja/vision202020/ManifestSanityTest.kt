@@ -92,6 +92,18 @@ class ManifestSanityTest {
     }
 
     @Test
+    fun breakActivityExcludedFromRecents() {
+        val manifest = parseXml("src/main/AndroidManifest.xml")
+        val activities = manifest.getElementsByTagName("activity")
+        val breakActivity = (0 until activities.length)
+            .map { activities.item(it) as Element }
+            .single { it.getAttribute("android:name") == ".ui.breakui.BreakActivity" }
+        assertEquals("true", breakActivity.getAttribute("android:excludeFromRecents"))
+        assertTrue(breakActivity.hasAttribute("android:taskAffinity"))
+        assertEquals("", breakActivity.getAttribute("android:taskAffinity"))
+    }
+
+    @Test
     fun testBootReceiverIntentFilters() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val pm = context.packageManager

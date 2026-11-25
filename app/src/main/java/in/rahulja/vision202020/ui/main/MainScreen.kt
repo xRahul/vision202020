@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -36,12 +38,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -53,6 +60,7 @@ import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.NotificationHelper
 import `in`.rahulja.vision202020.ui.components.PermissionGateCard
+import `in`.rahulja.vision202020.ui.spokenTimeRemaining
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -343,9 +351,22 @@ private fun TimerProgressCircle(
         )
     }
 
+    // Above one minute the spoken text only changes when the minute changes, so TalkBack
+    // is not re-triggered every second.
+    val spokenSeconds = when (status) {
+        is TimerStatus.Working -> status.remainingSeconds
+        is TimerStatus.Snoozed -> status.remainingSeconds
+        is TimerStatus.RestBreak -> status.remainingSeconds
+        is TimerStatus.Idle -> preferences.workDurationMinutes * 60
+    }
+    val stableSeconds = remember(spokenSeconds / 60, spokenSeconds > 60) { spokenSeconds }
+    val spokenDescription = spokenTimeRemaining(if (spokenSeconds > 60) stableSeconds else spokenSeconds)
+
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier.size(outerSize)
+        modifier = modifier
+            .size(outerSize)
+            .semantics(mergeDescendants = true) { contentDescription = spokenDescription }
     ) {
         CircularProgressIndicator(
             progress = { progress },
@@ -356,12 +377,16 @@ private fun TimerProgressCircle(
         )
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
+            BasicText(
                 text = timeString,
-                fontSize = timeTextSize,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1
+                modifier = Modifier.width(indicatorSize * 0.7f),
+                style = TextStyle(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center
+                ),
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(maxFontSize = timeTextSize)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
