@@ -1,6 +1,8 @@
 package `in`.rahulja.vision202020.widget
 
 import android.content.Context
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.Button
@@ -11,6 +13,7 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -25,10 +28,14 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import `in`.rahulja.vision202020.R
+import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
+import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.NotificationHelper
 import `in`.rahulja.vision202020.service.VisionTimerService
+import `in`.rahulja.vision202020.ui.breakui.BreakLauncher
 import `in`.rahulja.vision202020.ui.theme.VisionGlanceColorProviders
+import kotlinx.coroutines.flow.map
 
 class VisionGlanceWidget : GlanceAppWidget() {
 
@@ -71,7 +78,16 @@ class VisionGlanceWidget : GlanceAppWidget() {
             )
         }
 
+        val strictFlow = PreferencesRepositoryImpl(context.dataStore).preferencesFlow.map { it.strictMode }
+
         provideContent {
+            val strictMode by strictFlow.collectAsState(initial = false)
+            // Strict mode: a tap during a break must not skip, so it opens the break screen instead.
+            val buttonAction = if (strictMode && status is TimerStatus.RestBreak) {
+                actionStartActivity(BreakLauncher.intent(context))
+            } else {
+                actionRunCallback<WidgetToggleActionCallback>()
+            }
             GlanceTheme(colors = VisionGlanceColorProviders) {
                 Column(
                     modifier = GlanceModifier
@@ -103,7 +119,7 @@ class VisionGlanceWidget : GlanceAppWidget() {
                     Spacer(modifier = GlanceModifier.height(8.dp))
                     Button(
                         text = buttonText,
-                        onClick = actionRunCallback<WidgetToggleActionCallback>()
+                        onClick = buttonAction
                     )
                 }
             }

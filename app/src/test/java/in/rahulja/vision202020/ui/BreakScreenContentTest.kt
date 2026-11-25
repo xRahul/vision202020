@@ -1,12 +1,15 @@
 package `in`.rahulja.vision202020.ui
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import `in`.rahulja.vision202020.ui.breakui.BreakScreenContent
 import `in`.rahulja.vision202020.ui.theme.VisionTheme
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -91,5 +94,40 @@ class BreakScreenContentTest {
         composeTestRule.onNodeWithText("Rest Your Eyes").assertIsDisplayed()
         composeTestRule.onNodeWithText("Snooze 5m").assertIsDisplayed()
         composeTestRule.onNodeWithText("Hold 2s to Skip").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w392dp-h800dp-port")
+    fun strictSkipHasAccessibilityAction() {
+        var skipped = false
+        composeTestRule.setContent {
+            VisionTheme {
+                BreakScreenContent(
+                    remainingSeconds = 18,
+                    totalSeconds = 20,
+                    strictMode = true,
+                    onSkip = { skipped = true },
+                    onSnooze = {}
+                )
+            }
+        }
+
+        val node = composeTestRule.onNodeWithContentDescription("Hold 2s to Skip")
+        val action = node.fetchSemanticsNode().config[SemanticsActions.CustomActions]
+            .single { it.label == "Hold 2s to Skip" }
+
+        composeTestRule.runOnUiThread { action.action() }
+        composeTestRule.waitForIdle()
+        assertFalse("opening the confirm must not skip", skipped)
+        composeTestRule.onNodeWithText("Skip this break?").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Keep resting").performClick()
+        assertFalse("cancel must not skip", skipped)
+        composeTestRule.onNodeWithText("Skip this break?").assertDoesNotExist()
+
+        composeTestRule.runOnUiThread { action.action() }
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Skip").performClick()
+        assertTrue("confirming must call onSkip", skipped)
     }
 }

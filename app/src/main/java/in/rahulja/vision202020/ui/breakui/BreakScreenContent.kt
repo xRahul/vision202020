@@ -50,8 +50,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -376,6 +378,20 @@ private fun BreakActionButtons(
     val currentOnSkip by rememberUpdatedState(onSkip)
     val currentOnHoldingChanged by rememberUpdatedState(onHoldingChanged)
     val holdSkipLabel = stringResource(R.string.break_hold_skip)
+    var confirmingSkip by remember { mutableStateOf(false) }
+
+    if (confirmingSkip) {
+        // Inline instead of a Dialog: the overlay window has no activity token for a dialog window.
+        SkipConfirmation(
+            onConfirm = {
+                confirmingSkip = false
+                currentOnSkip()
+            },
+            onCancel = { confirmingSkip = false },
+            modifier = modifier
+        )
+        return
+    }
 
     Row(
         modifier = modifier,
@@ -403,6 +419,13 @@ private fun BreakActionButtons(
                     .semantics {
                         role = Role.Button
                         contentDescription = holdSkipLabel
+                        // A two-second hold is not possible with TalkBack; offer a confirmed skip instead.
+                        customActions = listOf(
+                            CustomAccessibilityAction(holdSkipLabel) {
+                                confirmingSkip = true
+                                true
+                            }
+                        )
                     }
                     .background(
                         color = if (isHoldingToSkip) Color(0xFFEF4444) else Color(0xFF334155),
@@ -447,6 +470,48 @@ private fun BreakActionButtons(
                     fontSize = 14.sp,
                     color = Color.White
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkipConfirmation(onConfirm: () -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(R.string.break_skip_confirm_title),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.break_skip_confirm_message),
+            fontSize = 14.sp,
+            color = Color(0xFF94A3B8),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedButton(
+                onClick = onCancel,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFCBD5E1)),
+                modifier = Modifier.height(48.dp)
+            ) {
+                Text(text = stringResource(R.string.break_skip_confirm_cancel), fontSize = 14.sp)
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Button(
+                onClick = onConfirm,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                modifier = Modifier.height(48.dp)
+            ) {
+                Text(text = stringResource(R.string.break_skip_confirm_action), fontSize = 14.sp, color = Color.White)
             }
         }
     }

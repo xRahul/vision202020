@@ -64,7 +64,7 @@ class BreakActivity : ComponentActivity() {
                     strictMode = preferences.strictMode,
                     snoozeMinutes = preferences.snoozeMinutes,
                     onSkip = {
-                        if (breakStatus != null) VisionTimerService.completeBreak(this)
+                        if (breakStatus != null) VisionTimerService.completeBreak(this, fromBreakUi = true)
                         finish()
                     },
                     onSnooze = {
