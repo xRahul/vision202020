@@ -113,6 +113,62 @@ class VisionTimerServiceToggleTest {
         assertFalse(shadowOf(service).isStoppedBySelf)
     }
 
+    private fun pumpFor(ms: Long) {
+        val end = System.currentTimeMillis() + ms
+        while (System.currentTimeMillis() < end) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(25)
+        }
+    }
+
+    @Test
+    fun toggleQueuedBehindStopDoesNotStartSession() {
+        val controller = Robolectric.buildService(VisionTimerService::class.java, intent(VisionTimerService.ACTION_RESTORE))
+        val service = controller.get()
+        val gate = CompletableDeferred<Unit>()
+        service.beforeRestoreLoad = { gate.await() }
+        controller.create().startCommand(0, 1)
+        controller.withIntent(intent(VisionTimerService.ACTION_TOGGLE)).startCommand(0, 2)
+        controller.withIntent(intent(VisionTimerService.ACTION_STOP)).startCommand(0, 3)
+        gate.complete(Unit)
+
+        pumpFor(500)
+
+        assertTrue("a toggle queued before STOP must not start a session", VisionTimerStateHolder.state.value is TimerStatus.Idle)
+    }
+
+    @Test
+    fun strictCompleteDuringRestoreIsGatedByStoredPrefs() {
+        runBlocking {
+            PreferencesRepositoryImpl(context.dataStore).updateStrictMode(true)
+            store.save(
+                SessionSnapshot(
+                    status = TimerStatus.RestBreak(
+                        remainingSeconds = 20,
+                        totalSeconds = 20,
+                        breakStartedTimestampMs = SystemClock.elapsedRealtime()
+                    ),
+                    isSessionActive = true,
+                    bootCount = 1,
+                    screenOffAtMs = 0L
+                )
+            )
+        }
+        val controller = Robolectric.buildService(VisionTimerService::class.java, intent(VisionTimerService.ACTION_RESTORE))
+        val service = controller.get()
+        val gate = CompletableDeferred<Unit>()
+        service.beforeRestoreLoad = { gate.await() }
+        controller.create().startCommand(0, 1)
+        controller.withIntent(intent(VisionTimerService.ACTION_COMPLETE_BREAK)).startCommand(0, 2)
+        gate.complete(Unit)
+
+        assertTrue(awaitCondition { VisionTimerStateHolder.state.value is TimerStatus.RestBreak })
+        pumpFor(500)
+
+        assertTrue("strict break must survive a non-UI complete", VisionTimerStateHolder.state.value is TimerStatus.RestBreak)
+        assertFalse(shadowOf(service).isStoppedBySelf)
+    }
+
     @Test
     fun sendReturnsFalseWhenForegroundStartDenied() {
         val denied = mockk<Context>(relaxed = true)

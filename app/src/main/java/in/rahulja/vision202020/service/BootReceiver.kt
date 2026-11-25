@@ -16,6 +16,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 class BootReceiver : BroadcastReceiver() {
 
@@ -28,30 +29,39 @@ class BootReceiver : BroadcastReceiver() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope.launch {
             try {
-                val sessionStore = SessionStore(context.applicationContext.sessionDataStore)
-                if (action == Intent.ACTION_BOOT_COMPLETED) {
-                    // elapsedRealtime restarted: any saved session is from the previous boot. Clear it
-                    // on the shared write lane so no older save can land after the clear.
-                    withContext(SessionWriteLane.dispatcher) { runCatching { sessionStore.clear() } }
-                }
-                val repository = PreferencesRepositoryImpl(context.applicationContext.dataStore)
-                val prefs = repository.preferencesFlow.first()
-                if (action == Intent.ACTION_BOOT_COMPLETED) {
-                    if (prefs.startOnBoot) {
-                        VisionTimerService.start(context)
-                    }
-                } else if (action == Intent.ACTION_MY_PACKAGE_REPLACED) {
-                    val snapshot = runCatching { sessionStore.load(context.currentBootCount()) }.getOrNull()
-                    if (snapshot?.isResumable == true) {
-                        VisionTimerService.restore(context)
-                    } else if (prefs.startOnBoot) {
-                        VisionTimerService.start(context)
-                    }
-                }
+                withTimeout(WORK_TIMEOUT_MS) { handle(context, action) }
             } finally {
                 pendingResult.finish()
                 scope.cancel()
             }
         }
+    }
+
+    private suspend fun handle(context: Context, action: String) {
+        val sessionStore = SessionStore(context.applicationContext.sessionDataStore)
+        if (action == Intent.ACTION_BOOT_COMPLETED) {
+            // elapsedRealtime restarted: any saved session is from the previous boot. Clear it
+            // on the shared write lane so no older save can land after the clear.
+            withContext(SessionWriteLane.dispatcher) { runCatchingCancellable { sessionStore.clear() } }
+        }
+        val repository = PreferencesRepositoryImpl(context.applicationContext.dataStore)
+        val prefs = repository.preferencesFlow.first()
+        if (action == Intent.ACTION_BOOT_COMPLETED) {
+            if (prefs.startOnBoot) {
+                VisionTimerService.start(context)
+            }
+        } else if (action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            val snapshot = runCatchingCancellable { sessionStore.load(context.currentBootCount()) }.getOrNull()
+            if (snapshot?.isResumable == true) {
+                VisionTimerService.restore(context)
+            } else if (prefs.startOnBoot) {
+                VisionTimerService.start(context)
+            }
+        }
+    }
+
+    private companion object {
+        /** A broadcast has about 10s; finish() must run before the system gives up on goAsync. */
+        const val WORK_TIMEOUT_MS = 8_000L
     }
 }

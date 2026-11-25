@@ -84,6 +84,40 @@ class VisionTimerServiceRestoreTest {
     }
 
     @Test
+    fun explicitCommandDuringRestoreClearsStaleSnapshot() {
+        runBlocking {
+            store.save(
+                SessionSnapshot(
+                    status = TimerStatus.Working(
+                        remainingSeconds = 600,
+                        elapsedSeconds = 600,
+                        totalSeconds = 1200,
+                        pauseReason = PauseReason.MANUAL,
+                        remainingAtPauseMs = 600_000L
+                    ),
+                    isSessionActive = true,
+                    bootCount = 1,
+                    screenOffAtMs = 0L
+                )
+            )
+        }
+        val controller = Robolectric.buildService(VisionTimerService::class.java, restoreIntent())
+        val service = controller.get()
+        val gate = CompletableDeferred<Unit>()
+        service.beforeRestoreLoad = { gate.await() }
+        controller.create().startCommand(0, 1)
+        // A PAUSE on an Idle engine ends the service and skips the restore.
+        controller.withIntent(
+            Intent(context, VisionTimerService::class.java).setAction(VisionTimerService.ACTION_PAUSE)
+        ).startCommand(0, 2)
+        gate.complete(Unit)
+
+        val cleared = awaitCondition { runBlocking { store.load(currentBootCount = 1, nowElapsedMs = 0L) } == null }
+
+        assertTrue("stale resumable snapshot must be cleared", cleared)
+    }
+
+    @Test
     fun restoreWithNothingToResumeStopsAndRemovesForeground() {
         val controller = Robolectric.buildService(VisionTimerService::class.java, restoreIntent())
         val service = controller.create().startCommand(0, 1).get()

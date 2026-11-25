@@ -153,7 +153,7 @@ class VisionTimerService : Service() {
                             screenOffAtMs = engine.screenOffAtMs
                         )
                         applicationScope.launch(SessionWriteLane.dispatcher) {
-                            runCatching { sessionStore.save(snapshot) }
+                            runCatchingCancellable { sessionStore.save(snapshot) }
                         }
                     }
                 }
@@ -173,8 +173,8 @@ class VisionTimerService : Service() {
             // OS restarted a sticky service. restoreSessionIfNeeded() decides to resume or stop.
             return Service.START_STICKY
         }
-        // TOGGLE sets the flag itself, once restore has finished.
-        if (action != ACTION_RESTORE && action != ACTION_TOGGLE) {
+        // TOGGLE and COMPLETE_BREAK set the flag themselves, once restore has finished.
+        if (action != ACTION_RESTORE && action != ACTION_TOGGLE && action != ACTION_COMPLETE_BREAK) {
             explicitCommandReceived = true
         }
         sessionStopped = false
@@ -182,8 +182,8 @@ class VisionTimerService : Service() {
         startForegroundServiceWithNotification()
 
         when (action) {
-            // onCreate already started the restore; a late RESTORE on a live service must not redo it.
-            ACTION_RESTORE -> if (restoreJob == null) restoreSessionIfNeeded()
+            // onCreate already started the restore; a late RESTORE on a live service has nothing to add.
+            ACTION_RESTORE -> Unit
 
             ACTION_START -> startTimer()
 
@@ -204,10 +204,22 @@ class VisionTimerService : Service() {
 
             ACTION_COMPLETE_BREAK -> {
                 // Strict mode: only the break screen, after the hold or confirm, may complete a break.
-                if (blockedByStrictMode() && intent?.getBooleanExtra(EXTRA_FROM_BREAK_UI, false) != true) {
-                    repostBreakAlert()
+                val fromBreakUi = intent.getBooleanExtra(EXTRA_FROM_BREAK_UI, false)
+                if (restoreJob?.isActive == true) {
+                    // Prefs and the break itself are only known once restore finishes.
+                    pendingToggles++
+                    serviceScope.launch {
+                        try {
+                            restoreJob?.join()
+                            explicitCommandReceived = true
+                            if (!sessionStopped) completeBreakGated(fromBreakUi)
+                        } finally {
+                            pendingToggles--
+                            stopIfNoSession()
+                        }
+                    }
                 } else {
-                    engine.completeBreak()
+                    completeBreakGated(fromBreakUi)
                 }
             }
 
@@ -217,7 +229,8 @@ class VisionTimerService : Service() {
                     try {
                         restoreJob?.join()
                         explicitCommandReceived = true
-                        resolveToggle()
+                        // A STOP queued behind this toggle wins; do not start a new session after it.
+                        if (!sessionStopped) resolveToggle()
                     } finally {
                         pendingToggles--
                     }
@@ -227,13 +240,27 @@ class VisionTimerService : Service() {
         // A command that cannot produce a live session must not leave a foreground service.
         // Clear the flags first so a command arriving before destruction starts foreground cleanly.
         // RESTORE and TOGGLE are exempt: the engine is still Idle while the restore coroutine reads the store.
-        if (action != ACTION_RESTORE && action != ACTION_TOGGLE && !engine.isSessionActive && engine.state.value is TimerStatus.Idle) {
-            sessionStopped = true
-            foregroundStarted = false
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+        // A COMPLETE_BREAK waiting on restore is exempt too.
+        val deferred = action == ACTION_RESTORE || action == ACTION_TOGGLE || pendingToggles > 0
+        if (!deferred && stopIfNoSession()) {
+            // The command skipped restore, so drop the saved session it would have resumed.
+            applicationScope.launch(SessionWriteLane.dispatcher) { runCatchingCancellable { sessionStore.clear() } }
         }
         return Service.START_STICKY
+    }
+
+    private fun completeBreakGated(fromBreakUi: Boolean) {
+        if (blockedByStrictMode() && !fromBreakUi) repostBreakAlert() else engine.completeBreak()
+    }
+
+    /** Stops the service when no session is live and no command is waiting. Returns whether it stopped. */
+    private fun stopIfNoSession(): Boolean {
+        if (pendingToggles > 0 || engine.isSessionActive || engine.state.value !is TimerStatus.Idle) return false
+        sessionStopped = true
+        foregroundStarted = false
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+        return true
     }
 
     /** Tile/widget toggle, resolved against the restored state. Never destroys an active session by accident. */
@@ -285,7 +312,7 @@ class VisionTimerService : Service() {
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_TIMER)
         notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
         foregroundStarted = false
-        applicationScope.launch(SessionWriteLane.dispatcher) { runCatching { sessionStore.clear() } }
+        applicationScope.launch(SessionWriteLane.dispatcher) { runCatchingCancellable { sessionStore.clear() } }
         updateWidget(force = true)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -354,7 +381,7 @@ class VisionTimerService : Service() {
     private fun restoreSessionIfNeeded() {
         restoreJob = serviceScope.launch {
             beforeRestoreLoad?.invoke()
-            val snapshot = runCatching { sessionStore.load(currentBootCount()) }.getOrNull()
+            val snapshot = runCatchingCancellable { sessionStore.load(currentBootCount()) }.getOrNull()
             if (explicitCommandReceived) return@launch
             if (snapshot == null || !snapshot.isResumable) {
                 // A toggle waiting on this restore will start a fresh session; keep the service alive for it.
@@ -367,7 +394,7 @@ class VisionTimerService : Service() {
                 return@launch
             }
             engine.restore(snapshot)
-            currentPrefs = runCatching { PreferencesRepositoryImpl(applicationContext.dataStore).preferencesFlow.first() }
+            currentPrefs = runCatchingCancellable { PreferencesRepositoryImpl(applicationContext.dataStore).preferencesFlow.first() }
                 .getOrDefault(currentPrefs)
             engine.updatePreferences(currentPrefs)
             syncInteractiveState()
@@ -481,7 +508,7 @@ class VisionTimerService : Service() {
         if (!force && now - lastWidgetUpdateMs < WIDGET_UPDATE_INTERVAL_MS) return
         lastWidgetUpdateMs = now
         applicationScope.launch {
-            runCatching { VisionGlanceWidget().updateAll(applicationContext) }
+            runCatchingCancellable { VisionGlanceWidget().updateAll(applicationContext) }
         }
     }
 
