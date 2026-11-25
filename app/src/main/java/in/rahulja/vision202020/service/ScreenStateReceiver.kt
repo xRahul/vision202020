@@ -6,7 +6,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 
-class ScreenStateReceiver(private val onScreenOn: () -> Unit, private val onScreenOff: () -> Unit) : BroadcastReceiver() {
+class ScreenStateReceiver(
+    private val onScreenOn: () -> Unit,
+    private val onScreenOff: () -> Unit,
+    private val onUserPresent: () -> Unit = {}
+) : BroadcastReceiver() {
 
     private var isRegistered = false
 
@@ -14,6 +18,7 @@ class ScreenStateReceiver(private val onScreenOn: () -> Unit, private val onScre
         when (intent?.action) {
             Intent.ACTION_SCREEN_ON -> onScreenOn()
             Intent.ACTION_SCREEN_OFF -> onScreenOff()
+            Intent.ACTION_USER_PRESENT -> onUserPresent()
         }
     }
 
@@ -22,6 +27,7 @@ class ScreenStateReceiver(private val onScreenOn: () -> Unit, private val onScre
             val filter = IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_USER_PRESENT)
             }
             ContextCompat.registerReceiver(
                 context,

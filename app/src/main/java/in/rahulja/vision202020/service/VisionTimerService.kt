@@ -1,6 +1,7 @@
 package `in`.rahulja.vision202020.service
 
 import android.annotation.SuppressLint
+import android.app.KeyguardManager
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
@@ -57,7 +58,8 @@ class VisionTimerService : Service() {
     internal var beforeRestoreLoad: (suspend () -> Unit)? = null
 
     private lateinit var notificationHelper: NotificationHelper
-    private lateinit var overlayManager: OverlayManager
+    internal lateinit var overlayManager: OverlayManager
+        private set
     private lateinit var soundAlertHelper: SoundAlertHelper
     private lateinit var engine: VisionTimerEngine
     private lateinit var screenReceiver: ScreenStateReceiver
@@ -70,6 +72,9 @@ class VisionTimerService : Service() {
     private var foregroundStarted = false
     private var explicitCommandReceived = false
     private var sessionStopped = false
+
+    /** The break alert is posted once per break; the system chronometer does the counting. */
+    private var breakAlertPosted = false
 
     /** Toggles waiting for restore to finish; a "nothing to resume" restore must not stop the service under them. */
     private var pendingToggles = 0
@@ -101,6 +106,7 @@ class VisionTimerService : Service() {
                 }
                 handleStateChange(engine.state.value)
             },
+            onUserPresent = { onUserPresent() },
             onScreenOff = {
                 engine.onScreenOff()
                 overlayManager.dismissOverlay()
@@ -240,6 +246,11 @@ class VisionTimerService : Service() {
         }
     }
 
+    /** Unlocked mid-break: the overlay takes over from the lock-screen notification. */
+    internal fun onUserPresent() {
+        if (engine.state.value is TimerStatus.RestBreak) handleStateChange(engine.state.value)
+    }
+
     private fun blockedByStrictMode(): Boolean = currentPrefs.strictMode && engine.state.value is TimerStatus.RestBreak
 
     /** A refused strict-mode skip must leave the user a way to the break screen. */
@@ -250,6 +261,7 @@ class VisionTimerService : Service() {
             NotificationHelper.NOTIFICATION_ID_BREAK,
             notificationHelper.buildBreakAlertNotification(status, currentPrefs)
         )
+        breakAlertPosted = true
     }
 
     private fun startTimer() {
@@ -396,7 +408,9 @@ class VisionTimerService : Service() {
                     )
                 }
 
-                val wantsOverlay = currentPrefs.enforcementMode == EnforcementMode.BLOCKER_OVERLAY
+                val locked = (getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager)?.isKeyguardLocked == true
+                // Locked: an overlay would sit behind the keyguard, so the full-screen notification delivers the break.
+                val wantsOverlay = currentPrefs.enforcementMode == EnforcementMode.BLOCKER_OVERLAY && !locked
                 if (wantsOverlay && overlayManager.canDrawOverlays()) {
                     overlayManager.showBreakOverlay(
                         remainingSeconds = status.remainingSeconds,
@@ -408,18 +422,25 @@ class VisionTimerService : Service() {
                         onSnooze = { engine.snooze(currentPrefs.snoozeMinutes * 60) }
                     )
                 }
-                if (!overlayManager.isShowing) {
-                    // No overlay permission or OEM refused the window: always fall back.
+                if (overlayManager.isShowing) {
+                    if (breakAlertPosted) {
+                        notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
+                        breakAlertPosted = false
+                    }
+                } else if (!breakAlertPosted) {
+                    // Locked, no overlay permission, or OEM refused the window: always fall back.
                     val alertNotification =
                         notificationHelper.buildBreakAlertNotification(status, currentPrefs)
                     notificationManager.notify(
                         NotificationHelper.NOTIFICATION_ID_BREAK,
                         alertNotification
                     )
+                    breakAlertPosted = true
                 }
             }
 
             is TimerStatus.Working -> {
+                breakAlertPosted = false
                 overlayManager.dismissOverlay()
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
                 if (status.isScreenPaused) {
@@ -430,12 +451,14 @@ class VisionTimerService : Service() {
             }
 
             is TimerStatus.Snoozed -> {
+                breakAlertPosted = false
                 overlayManager.dismissOverlay()
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
                 if (tickerJob?.isActive != true) startTicker()
             }
 
             is TimerStatus.Idle -> {
+                breakAlertPosted = false
                 overlayManager.dismissOverlay()
                 notificationManager.cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
                 stopTicker()

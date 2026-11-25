@@ -10,6 +10,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -39,12 +40,15 @@ class OverlayManager(private val context: Context) {
             context
         }
 
-    private val windowManager: WindowManager =
+    internal var windowManager: WindowManager =
         windowContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
     private var overlayView: View? = null
     private var activeLifecycleOwner: OverlayLifecycleOwner? = null
-    private val remainingSecondsState = mutableIntStateOf(20)
+    internal val remainingSecondsState = mutableIntStateOf(20)
+    internal val strictModeState = mutableStateOf(false)
+    internal val snoozeMinutesState = mutableIntStateOf(5)
+    internal val appThemeState = mutableStateOf(AppThemeMode.OLED_BLACK)
 
     internal var currentLayoutParams: WindowManager.LayoutParams? = null
         private set
@@ -63,6 +67,10 @@ class OverlayManager(private val context: Context) {
         onSkip: () -> Unit,
         onSnooze: () -> Unit
     ) {
+        // Settings may change mid-break; keep the visible overlay in step.
+        strictModeState.value = strictMode
+        snoozeMinutesState.intValue = snoozeMinutes
+        appThemeState.value = appTheme
         if (!canDrawOverlays() || _isShowing) {
             updateCountdown(remainingSeconds)
             return
@@ -96,12 +104,12 @@ class OverlayManager(private val context: Context) {
             setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(lifecycleOwner)
             setContent {
-                VisionTheme(appTheme = appTheme) {
+                VisionTheme(appTheme = appThemeState.value) {
                     BreakScreenContent(
                         remainingSeconds = remainingSecondsState.intValue,
                         totalSeconds = totalSeconds,
-                        strictMode = strictMode,
-                        snoozeMinutes = snoozeMinutes,
+                        strictMode = strictModeState.value,
+                        snoozeMinutes = snoozeMinutesState.intValue,
                         onSkip = {
                             dismissOverlay()
                             onSkip()
@@ -122,6 +130,7 @@ class OverlayManager(private val context: Context) {
             _isShowing = true
         } catch (e: Exception) {
             Log.w("OverlayManager", "Failed to show overlay", e)
+            lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
             _isShowing = false
             overlayView = null
             currentLayoutParams = null

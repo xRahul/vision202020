@@ -206,7 +206,11 @@ class NotificationHelper(private val context: Context) {
             .setOnlyAlertOnce(true)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setAutoCancel(true)
-            .setProgress(status.totalSeconds, status.remainingSeconds, false)
+            // Posted once per break; the system counts down, so no per-second reposts.
+            .setWhen(System.currentTimeMillis() + status.remainingSeconds * 1000L)
+            .setShowWhen(true)
+            .setUsesChronometer(true)
+            .setChronometerCountDown(true)
         // Strict mode: only Snooze. Skipping needs the hold on the break screen.
         if (!preferences.strictMode) {
             builder.addAction(

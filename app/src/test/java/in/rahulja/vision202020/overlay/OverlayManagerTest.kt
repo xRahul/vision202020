@@ -2,8 +2,15 @@ package `in`.rahulja.vision202020.overlay
 
 import android.content.Context
 import android.os.Build
+import android.view.View
 import android.view.WindowManager
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
+import `in`.rahulja.vision202020.data.AppThemeMode
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -104,5 +111,43 @@ class OverlayManagerTest {
 
         overlayManager.dismissOverlay()
         assertFalse(overlayManager.isShowing)
+    }
+
+    @Test
+    fun settingsChangeWhileShowingUpdatesContent() {
+        ShadowSettings.setCanDrawOverlays(true)
+        overlayManager.showBreakOverlay(remainingSeconds = 20, onSkip = {}, onSnooze = {})
+        assertFalse(overlayManager.strictModeState.value)
+
+        overlayManager.showBreakOverlay(
+            remainingSeconds = 12,
+            strictMode = true,
+            snoozeMinutes = 9,
+            appTheme = AppThemeMode.LIGHT,
+            onSkip = {},
+            onSnooze = {}
+        )
+
+        assertTrue(overlayManager.strictModeState.value)
+        assertEquals(9, overlayManager.snoozeMinutesState.intValue)
+        assertEquals(AppThemeMode.LIGHT, overlayManager.appThemeState.value)
+        assertEquals(12, overlayManager.remainingSecondsState.intValue)
+    }
+
+    @Test
+    fun addViewFailureDestroysLifecycle() {
+        ShadowSettings.setCanDrawOverlays(true)
+        val failing = mockk<WindowManager>(relaxed = true)
+        val added = slot<View>()
+        every { failing.addView(capture(added), any()) } throws RuntimeException("refused")
+        overlayManager.windowManager = failing
+
+        overlayManager.showBreakOverlay(remainingSeconds = 20, onSkip = {}, onSnooze = {})
+
+        assertFalse(overlayManager.isShowing)
+        assertEquals(
+            Lifecycle.State.DESTROYED,
+            added.captured.findViewTreeLifecycleOwner()!!.lifecycle.currentState
+        )
     }
 }

@@ -7,6 +7,7 @@ import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.domain.TimerStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -102,6 +103,18 @@ class NotificationHelperTest {
         val notification = notificationHelper.buildTimerNotification(breakStatus, 5, strictMode = true)
         val titles = notification.actions.map { it.title.toString() }
         assertEquals(listOf("Snooze 5m", "Stop"), titles)
+    }
+
+    @Test
+    fun breakAlertCountsDownWithChronometerInsteadOfProgress() {
+        notificationHelper.createChannels()
+        val before = System.currentTimeMillis()
+        val notification = notificationHelper.buildBreakAlertNotification(breakStatus, UserPreferences())
+
+        assertTrue(notification.extras.getBoolean(android.app.Notification.EXTRA_SHOW_CHRONOMETER))
+        assertTrue(notification.extras.getBoolean(android.app.Notification.EXTRA_CHRONOMETER_COUNT_DOWN))
+        assertTrue(notification.`when` >= before + 15_000L)
+        assertEquals(0, notification.extras.getInt(android.app.Notification.EXTRA_PROGRESS_MAX))
     }
 
     @Test
