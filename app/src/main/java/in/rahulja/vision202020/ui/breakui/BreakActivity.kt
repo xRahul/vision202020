@@ -20,7 +20,6 @@ import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.domain.TimerStatus
 import `in`.rahulja.vision202020.service.VisionTimerService
 import `in`.rahulja.vision202020.ui.theme.VisionTheme
-import kotlinx.coroutines.flow.map
 
 class BreakActivity : ComponentActivity() {
 
@@ -41,8 +40,7 @@ class BreakActivity : ComponentActivity() {
             val status by VisionTimerService.timerStatus.collectAsStateWithLifecycle()
             // Null until DataStore emits: the defaults (strict off) must never authorize a skip.
             val loadedPreferences by repository.preferencesFlow
-                .map<UserPreferences, UserPreferences?> { it }
-                .collectAsStateWithLifecycle(initialValue = null)
+                .collectAsStateWithLifecycle<UserPreferences?>(initialValue = null)
             val preferences = loadedPreferences ?: UserPreferences()
             // Only finish after a break was actually observed: a cold process starts at
             // Idle and must not close the screen before the service restores its state.

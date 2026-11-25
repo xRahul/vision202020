@@ -34,7 +34,7 @@ Extended screen time on phones and laptops drastically decreases natural blinkin
 - **20-Second Guided Relaxation:** When the work timer completes, a soothing 20-second breathing overlay prompts you to look 20 feet away, blink gently, and relax your ciliary muscles before automatically dismissing itself.
 - **Screen-Aware Timer:** Ticks only while your screen is on. Uses a monotonic clock, so changing the system clock has no effect. Pauses immediately when the screen turns off and auto-resets if your phone stays locked for ≥ 5 minutes (Natural Break).
 - **Lock-Screen Alert Delivery:** While the device is locked, the break arrives as a full-screen-intent notification, Google Clock-alarm style. If you unlock mid-break, the overlay takes over. On Android 14+ you may need to allow full-screen notifications; the app shows a permission card when that is off.
-- **Strict Mode:** Hold the skip button for 2 seconds to end a break early, on every surface. The break notification shows only Snooze. Tapping the tile or widget during a strict break opens the break screen. Snooze stays available. TalkBack users get a custom action that asks for confirmation.
+- **Strict Mode:** Hold the skip button for 2 seconds on the break screen or overlay to end a break early. The break notification and the timer notification offer only Snooze. Tapping the tile or widget during a strict break opens the break screen. Snooze stays available. TalkBack users get a custom action that asks for confirmation.
 - **Quick Settings Tile:** One-tap toggle directly in your notification shade.
 - **Home Screen Widget:** Interactive Jetpack Glance widget that updates live with the remaining time with start/pause/resume controls.
 - **Notification-Only Mode:** Optional sound/vibration reminder for users who prefer zero visual blockers.
@@ -98,7 +98,7 @@ The saved timer session lives in its own DataStore file and is excluded from clo
 | `SYSTEM_ALERT_WINDOW` | Draws the 20-second eye-rest overlay above other apps. |
 | `POST_NOTIFICATIONS` | Shows the timer notification and break prompts on Android 13+. |
 | `USE_FULL_SCREEN_INTENT` | Delivers the lock-screen break alert like an alarm. |
-| `RECEIVE_BOOT_COMPLETED` | Restarts the timer service after a device reboot. The previous session is not restored. |
+| `RECEIVE_BOOT_COMPLETED` | Restarts the timer service after a device reboot only if "Start automatically after reboot" is on. The previous session is not restored. Also receives `MY_PACKAGE_REPLACED`, which restores a same-boot session after an app update. |
 | `VIBRATE` | Optional vibration reminder. |
 | `WAKE_LOCK` | Added by Glance's WorkManager dependency so home-screen widget updates can finish. The app does not acquire wake locks directly. |
 | `in.rahulja.vision202020.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | App-internal permission for non-exported dynamic receivers. |
