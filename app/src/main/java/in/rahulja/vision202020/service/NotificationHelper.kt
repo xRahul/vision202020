@@ -10,7 +10,7 @@ import androidx.core.app.NotificationCompat
 import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.domain.TimerStatus
-import `in`.rahulja.vision202020.ui.breakui.BreakActivity
+import `in`.rahulja.vision202020.ui.breakui.BreakLauncher
 import `in`.rahulja.vision202020.ui.main.MainActivity
 import java.util.Locale
 
@@ -48,7 +48,7 @@ class NotificationHelper(private val context: Context) {
         notificationManager.createNotificationChannel(breakChannel)
     }
 
-    fun buildTimerNotification(status: TimerStatus, snoozeMinutes: Int = 5): Notification {
+    fun buildTimerNotification(status: TimerStatus, snoozeMinutes: Int = 5, strictMode: Boolean = false): Notification {
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -141,11 +141,14 @@ class NotificationHelper(private val context: Context) {
 
             is TimerStatus.RestBreak -> {
                 builder.setProgress(status.totalSeconds, status.remainingSeconds, false)
-                builder.addAction(
-                    android.R.drawable.ic_menu_view,
-                    context.getString(R.string.action_looked_away),
-                    servicePendingIntent(7, VisionTimerService.ACTION_COMPLETE_BREAK)
-                )
+                // Strict mode: skipping needs the hold on the break screen, not a one-tap action.
+                if (!strictMode) {
+                    builder.addAction(
+                        android.R.drawable.ic_menu_view,
+                        context.getString(R.string.action_looked_away),
+                        servicePendingIntent(7, VisionTimerService.ACTION_COMPLETE_BREAK)
+                    )
+                }
                 builder.addAction(
                     android.R.drawable.ic_lock_idle_alarm,
                     context.getString(R.string.action_snooze, snoozeMinutes),
@@ -185,17 +188,9 @@ class NotificationHelper(private val context: Context) {
     }
 
     fun buildBreakAlertNotification(status: TimerStatus.RestBreak, preferences: UserPreferences): Notification {
-        val fullScreenIntent = Intent(context, BreakActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val fullScreenPendingIntent = PendingIntent.getActivity(
-            context,
-            5,
-            fullScreenIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val fullScreenPendingIntent = BreakLauncher.pendingIntent(context)
 
-        return NotificationCompat.Builder(context, CHANNEL_ID_BREAK)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID_BREAK)
             .setSmallIcon(R.drawable.ic_stat_vision)
             .setContentTitle(context.getString(R.string.break_alert_title))
             .setContentText(
@@ -212,17 +207,20 @@ class NotificationHelper(private val context: Context) {
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setAutoCancel(true)
             .setProgress(status.totalSeconds, status.remainingSeconds, false)
-            .addAction(
+        // Strict mode: only Snooze. Skipping needs the hold on the break screen.
+        if (!preferences.strictMode) {
+            builder.addAction(
                 android.R.drawable.ic_menu_view,
                 context.getString(R.string.action_looked_away),
                 servicePendingIntent(7, VisionTimerService.ACTION_COMPLETE_BREAK)
             )
-            .addAction(
-                android.R.drawable.ic_lock_idle_alarm,
-                context.getString(R.string.action_snooze, preferences.snoozeMinutes),
-                servicePendingIntent(6, VisionTimerService.ACTION_SNOOZE)
-            )
-            .build()
+        }
+        builder.addAction(
+            android.R.drawable.ic_lock_idle_alarm,
+            context.getString(R.string.action_snooze, preferences.snoozeMinutes),
+            servicePendingIntent(6, VisionTimerService.ACTION_SNOOZE)
+        )
+        return builder.build()
     }
 
     private fun servicePendingIntent(requestCode: Int, action: String): PendingIntent {

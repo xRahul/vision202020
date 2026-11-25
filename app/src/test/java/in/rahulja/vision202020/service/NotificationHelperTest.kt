@@ -3,6 +3,7 @@ package `in`.rahulja.vision202020.service
 import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.domain.TimerStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -69,6 +70,38 @@ class NotificationHelperTest {
         assertNotNull(actions)
         assertEquals(1, actions.size)
         assertEquals("Start", actions[0].title.toString())
+    }
+
+    private val breakStatus = TimerStatus.RestBreak(remainingSeconds = 15, totalSeconds = 20, breakStartedTimestampMs = 1000L)
+
+    @Test
+    fun strictBreakAlertHasOnlySnoozeAction() {
+        notificationHelper.createChannels()
+        val notification = notificationHelper.buildBreakAlertNotification(
+            breakStatus,
+            UserPreferences(strictMode = true)
+        )
+        val titles = notification.actions.map { it.title.toString() }
+        assertEquals(listOf("Snooze 5m"), titles)
+    }
+
+    @Test
+    fun nonStrictBreakAlertHasLookedAwayAndSnooze() {
+        notificationHelper.createChannels()
+        val notification = notificationHelper.buildBreakAlertNotification(
+            breakStatus,
+            UserPreferences(strictMode = false)
+        )
+        val titles = notification.actions.map { it.title.toString() }
+        assertEquals(listOf("I Looked Away", "Snooze 5m"), titles)
+    }
+
+    @Test
+    fun strictTimerNotificationDuringBreakHasNoLookedAway() {
+        notificationHelper.createChannels()
+        val notification = notificationHelper.buildTimerNotification(breakStatus, 5, strictMode = true)
+        val titles = notification.actions.map { it.title.toString() }
+        assertEquals(listOf("Snooze 5m", "Stop"), titles)
     }
 
     @Test

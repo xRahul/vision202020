@@ -1,12 +1,15 @@
 package `in`.rahulja.vision202020.service
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
+import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.SessionStore
+import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.data.sessionDataStore
 import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.SessionSnapshot
@@ -123,5 +126,80 @@ class VisionTimerServiceToggleTest {
     @Test
     fun sendReturnsTrueWhenStarted() {
         assertTrue(VisionTimerService.toggle(context))
+    }
+
+    /** Restores a live break with strict mode on and returns the running service. */
+    private fun startStrictBreak(strict: Boolean = true): VisionTimerService {
+        runBlocking {
+            PreferencesRepositoryImpl(context.dataStore).updateStrictMode(strict)
+            store.save(
+                SessionSnapshot(
+                    status = TimerStatus.RestBreak(
+                        remainingSeconds = 20,
+                        totalSeconds = 20,
+                        breakStartedTimestampMs = SystemClock.elapsedRealtime()
+                    ),
+                    isSessionActive = true,
+                    bootCount = 1,
+                    screenOffAtMs = 0L
+                )
+            )
+        }
+        val controller = Robolectric.buildService(VisionTimerService::class.java, intent(VisionTimerService.ACTION_RESTORE))
+        controller.create().startCommand(0, 1)
+        assertTrue(awaitCondition { VisionTimerStateHolder.state.value is TimerStatus.RestBreak })
+        // Restore applies the stored preferences after loading the snapshot.
+        shadowOf(Looper.getMainLooper()).idle()
+        activeController = controller
+        return controller.get()
+    }
+
+    private var activeController: org.robolectric.android.controller.ServiceController<VisionTimerService>? = null
+
+    private fun notificationManager() = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+    private fun breakNotificationPosted() =
+        shadowOf(notificationManager()).getNotification(NotificationHelper.NOTIFICATION_ID_BREAK) != null
+
+    @Test
+    fun strictToggleDuringBreakDoesNotComplete() {
+        startStrictBreak()
+        notificationManager().cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
+
+        activeController!!.withIntent(intent(VisionTimerService.ACTION_TOGGLE)).startCommand(0, 2)
+
+        assertTrue("break notification must be re-posted", awaitCondition { breakNotificationPosted() })
+        assertTrue(VisionTimerStateHolder.state.value is TimerStatus.RestBreak)
+    }
+
+    @Test
+    fun strictCompleteWithoutUiExtraIsIgnored() {
+        startStrictBreak()
+        notificationManager().cancel(NotificationHelper.NOTIFICATION_ID_BREAK)
+
+        activeController!!.withIntent(intent(VisionTimerService.ACTION_COMPLETE_BREAK)).startCommand(0, 2)
+
+        assertTrue("break notification must be re-posted", awaitCondition { breakNotificationPosted() })
+        assertTrue(VisionTimerStateHolder.state.value is TimerStatus.RestBreak)
+    }
+
+    @Test
+    fun strictCompleteWithUiExtraCompletes() {
+        startStrictBreak()
+
+        val completion = intent(VisionTimerService.ACTION_COMPLETE_BREAK)
+            .putExtra(VisionTimerService.EXTRA_FROM_BREAK_UI, true)
+        activeController!!.withIntent(completion).startCommand(0, 2)
+
+        assertTrue(awaitCondition { VisionTimerStateHolder.state.value is TimerStatus.Working })
+    }
+
+    @Test
+    fun nonStrictCompleteWithoutUiExtraCompletes() {
+        startStrictBreak(strict = false)
+
+        activeController!!.withIntent(intent(VisionTimerService.ACTION_COMPLETE_BREAK)).startCommand(0, 2)
+
+        assertTrue(awaitCondition { VisionTimerStateHolder.state.value is TimerStatus.Working })
     }
 }

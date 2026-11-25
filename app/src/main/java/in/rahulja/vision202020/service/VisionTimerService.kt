@@ -196,7 +196,14 @@ class VisionTimerService : Service() {
 
             ACTION_TRIGGER_BREAK -> engine.triggerBreak()
 
-            ACTION_COMPLETE_BREAK -> engine.completeBreak()
+            ACTION_COMPLETE_BREAK -> {
+                // Strict mode: only the break screen, after the hold or confirm, may complete a break.
+                if (blockedByStrictMode() && intent?.getBooleanExtra(EXTRA_FROM_BREAK_UI, false) != true) {
+                    repostBreakAlert()
+                } else {
+                    engine.completeBreak()
+                }
+            }
 
             ACTION_TOGGLE -> {
                 pendingToggles++
@@ -228,9 +235,21 @@ class VisionTimerService : Service() {
         when (val status = engine.state.value) {
             is TimerStatus.Idle -> startTimer()
             is TimerStatus.Working -> if (status.isScreenPaused) engine.resume() else engine.pause()
-            is TimerStatus.RestBreak -> engine.completeBreak()
+            is TimerStatus.RestBreak -> if (currentPrefs.strictMode) repostBreakAlert() else engine.completeBreak()
             is TimerStatus.Snoozed -> engine.triggerBreak()
         }
+    }
+
+    private fun blockedByStrictMode(): Boolean = currentPrefs.strictMode && engine.state.value is TimerStatus.RestBreak
+
+    /** A refused strict-mode skip must leave the user a way to the break screen. */
+    private fun repostBreakAlert() {
+        val status = engine.state.value as? TimerStatus.RestBreak ?: return
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(
+            NotificationHelper.NOTIFICATION_ID_BREAK,
+            notificationHelper.buildBreakAlertNotification(status, currentPrefs)
+        )
     }
 
     private fun startTimer() {
@@ -264,7 +283,11 @@ class VisionTimerService : Service() {
     private fun startForegroundServiceWithNotification() {
         if (foregroundStarted) return
         val initialNotification =
-            notificationHelper.buildTimerNotification(engine.state.value, currentPrefs.snoozeMinutes)
+            notificationHelper.buildTimerNotification(
+                engine.state.value,
+                currentPrefs.snoozeMinutes,
+                currentPrefs.strictMode
+            )
         ServiceCompat.startForeground(
             this,
             NotificationHelper.NOTIFICATION_ID_TIMER,
@@ -356,11 +379,11 @@ class VisionTimerService : Service() {
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // Only rebuild the timer notification when its content changes.
-        val key = timerNotificationKey(status)
+        val key = timerNotificationKey(status) + currentPrefs.strictMode
         if (key != lastTimerNotificationKey) {
             lastTimerNotificationKey = key
             val notification =
-                notificationHelper.buildTimerNotification(status, currentPrefs.snoozeMinutes)
+                notificationHelper.buildTimerNotification(status, currentPrefs.snoozeMinutes, currentPrefs.strictMode)
             notificationManager.notify(NotificationHelper.NOTIFICATION_ID_TIMER, notification)
         }
 
@@ -467,6 +490,9 @@ class VisionTimerService : Service() {
         const val ACTION_COMPLETE_BREAK = "in.rahulja.vision202020.action.COMPLETE_BREAK"
         const val ACTION_TOGGLE = "in.rahulja.vision202020.action.TOGGLE"
 
+        /** Set by the break screen after the hold or accessibility confirm; strict mode requires it to complete a break. */
+        const val EXTRA_FROM_BREAK_UI = "in.rahulja.vision202020.extra.FROM_BREAK_UI"
+
         private const val TAG = "VisionTimerService"
 
         const val WIDGET_UPDATE_INTERVAL_MS = 5000L
@@ -487,7 +513,8 @@ class VisionTimerService : Service() {
 
         fun triggerBreak(context: Context) = send(context, ACTION_TRIGGER_BREAK)
 
-        fun completeBreak(context: Context) = send(context, ACTION_COMPLETE_BREAK)
+        fun completeBreak(context: Context, fromBreakUi: Boolean = false) =
+            send(context, ACTION_COMPLETE_BREAK) { putExtra(EXTRA_FROM_BREAK_UI, fromBreakUi) }
 
         fun snooze(context: Context) = send(context, ACTION_SNOOZE)
 
@@ -495,8 +522,11 @@ class VisionTimerService : Service() {
         fun toggle(context: Context): Boolean = send(context, ACTION_TOGGLE)
 
         /** Returns false when Android denies the foreground-service start (e.g. background start restrictions). */
-        private fun send(context: Context, action: String): Boolean {
-            val intent = Intent(context, VisionTimerService::class.java).apply { this.action = action }
+        private fun send(context: Context, action: String, extras: Intent.() -> Unit = {}): Boolean {
+            val intent = Intent(context, VisionTimerService::class.java).apply {
+                this.action = action
+                extras()
+            }
             return try {
                 // Works from the tile/widget while the app is in the background.
                 ContextCompat.startForegroundService(context, intent)
