@@ -21,11 +21,18 @@ class SessionStoreWiringTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val prefsBefore = context.dataStore.data.first().asMap()
 
-        SessionStore(context.sessionDataStore)
-            .save(SessionSnapshot(TimerStatus.Idle, isSessionActive = false))
+        val snapshot = SessionSnapshot(TimerStatus.Idle, isSessionActive = false, bootCount = 1, screenOffAtMs = 0L)
+        val store = SessionStore(context.sessionDataStore)
 
-        // Path excluded by res/xml/backup_rules.xml and data_extraction_rules.xml.
-        assertTrue(File(context.filesDir, "datastore/vision_session.preferences_pb").exists())
+        store.save(snapshot)
+
+        assertEquals(snapshot, store.load(currentBootCount = 1, nowElapsedMs = 0L))
+        // Path excluded by res/xml/backup_rules.xml and data_extraction_rules.xml. The DataStore
+        // singleton is process-wide, so it may live under another test's Robolectric files dir.
+        val tmpRoot = generateSequence(context.filesDir) { it.parentFile }.drop(3).first()
+        assertTrue(
+            tmpRoot.walkTopDown().any { it.invariantSeparatorsPath.endsWith("files/datastore/vision_session.preferences_pb") }
+        )
         assertEquals(prefsBefore, context.dataStore.data.first().asMap())
     }
 }

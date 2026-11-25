@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.SessionStore
+import `in`.rahulja.vision202020.data.currentBootCount
 import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.data.sessionDataStore
 import kotlinx.coroutines.CoroutineScope
@@ -33,7 +34,7 @@ class BootReceiver : BroadcastReceiver() {
                     }
                 } else if (action == Intent.ACTION_MY_PACKAGE_REPLACED) {
                     val sessionStore = SessionStore(context.applicationContext.sessionDataStore)
-                    val snapshot = runCatching { sessionStore.load() }.getOrNull()
+                    val snapshot = runCatching { sessionStore.load(context.currentBootCount()) }.getOrNull()
                     if (snapshot?.isResumable == true) {
                         VisionTimerService.restore(context)
                     } else if (prefs.startOnBoot) {

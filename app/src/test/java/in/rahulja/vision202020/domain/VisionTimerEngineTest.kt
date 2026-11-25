@@ -218,4 +218,28 @@ class VisionTimerEngineTest {
 
         assertTrue("Expected RestBreak after snooze expires", engine.state.value is TimerStatus.RestBreak)
     }
+
+    @Test
+    fun restoredScreenOffPauseAppliesNaturalBreak() {
+        val t0 = fakeTime.currentMillis
+        val paused = TimerStatus.Working(
+            remainingSeconds = 600,
+            elapsedSeconds = 600,
+            totalSeconds = 1200,
+            pauseReason = PauseReason.SCREEN_OFF,
+            remainingAtPauseMs = 600_000L
+        )
+        val engine = VisionTimerEngine(defaultPrefs, timeProvider = { fakeTime.currentMillis })
+
+        engine.restore(SessionSnapshot(paused, true, bootCount = 1, screenOffAtMs = t0))
+        assertEquals(t0, engine.screenOffAtMs)
+        fakeTime.advanceMinutes(5)
+        fakeTime.advanceSeconds(1)
+        engine.onScreenOn()
+
+        val state = engine.state.value as TimerStatus.Working
+        assertEquals(PauseReason.NONE, state.pauseReason)
+        assertEquals(1200, state.remainingSeconds)
+        assertEquals(0, state.elapsedSeconds)
+    }
 }

@@ -4,14 +4,21 @@ package `in`.rahulja.vision202020.domain
  * Survives process death. Absolute timestamps make restore accurate: the engine
  * recomputes remaining time from the deadline instead of trusting a tick count.
  */
-data class SessionSnapshot(val status: TimerStatus, val isSessionActive: Boolean) {
+data class SessionSnapshot(
+    val status: TimerStatus,
+    val isSessionActive: Boolean,
+    /** `Settings.Global.BOOT_COUNT` at save time, -1 if unavailable. */
+    val bootCount: Int,
+    /** elapsedRealtime at screen-off; 0 means the screen is on. */
+    val screenOffAtMs: Long
+) {
     /** A restored session is only meaningful if it was active and not already Idle. */
     val isResumable: Boolean get() = isSessionActive && status !is TimerStatus.Idle
 }
 
 object SessionSnapshotCodec {
 
-    private const val VERSION = "1"
+    const val VERSION = "2"
 
     fun encode(snapshot: SessionSnapshot): String {
         val active = if (snapshot.isSessionActive) "1" else "0"
@@ -42,19 +49,21 @@ object SessionSnapshotCodec {
                 status.deadlineTimestampMs
             ).joinToString(":")
         }
-        return "$VERSION|$active|$body"
+        return "$VERSION|$active|${snapshot.bootCount}|${snapshot.screenOffAtMs}|$body"
     }
 
     fun decode(raw: String?): SessionSnapshot? {
         if (raw.isNullOrBlank()) return null
         val parts = raw.split("|")
-        if (parts.size != 3 || parts[0] != VERSION) return null
+        if (parts.size != 5 || parts[0] != VERSION) return null
         val isActive = when (parts[1]) {
             "1" -> true
             "0" -> false
             else -> return null
         }
-        val fields = parts[2].split(":")
+        val bootCount = parts[2].toIntOrNull() ?: return null
+        val screenOffAtMs = parts[3].toLongOrNull() ?: return null
+        val fields = parts[4].split(":")
         val status = try {
             when (fields[0]) {
                 "I" -> TimerStatus.Idle
@@ -86,6 +95,6 @@ object SessionSnapshotCodec {
             // Corrupt or truncated snapshot: start clean rather than crash on boot.
             return null
         }
-        return SessionSnapshot(status, isActive)
+        return SessionSnapshot(status, isActive, bootCount, screenOffAtMs)
     }
 }

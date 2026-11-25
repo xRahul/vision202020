@@ -1,6 +1,7 @@
 package `in`.rahulja.vision202020.data
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -8,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import `in`.rahulja.vision202020.domain.SessionSnapshot
 import `in`.rahulja.vision202020.domain.SessionSnapshotCodec
+import `in`.rahulja.vision202020.domain.TimerStatus
 import kotlinx.coroutines.flow.first
 
 /** Separate file so session saves never re-emit user preferences (and vice versa). */
@@ -19,9 +21,30 @@ val Context.sessionDataStore: DataStore<Preferences> by preferencesDataStore(nam
  */
 class SessionStore(private val dataStore: DataStore<Preferences>) {
 
-    suspend fun load(): SessionSnapshot? {
+    /**
+     * Returns the saved session only if it belongs to the current boot. When the boot count is
+     * unavailable (-1) a deadline far ahead of elapsedRealtime means the clock restarted.
+     */
+    suspend fun load(currentBootCount: Int, nowElapsedMs: Long = SystemClock.elapsedRealtime()): SessionSnapshot? {
         val raw = dataStore.data.first()[Keys.SESSION]
-        return SessionSnapshotCodec.decode(raw)
+        val snapshot = SessionSnapshotCodec.decode(raw) ?: return null
+        if (snapshot.bootCount != currentBootCount) return null
+        if ((currentBootCount == -1 || snapshot.bootCount == -1) &&
+            snapshot.farFuture(nowElapsedMs)
+        ) {
+            return null
+        }
+        return snapshot
+    }
+
+    private fun SessionSnapshot.farFuture(nowElapsedMs: Long): Boolean {
+        val limit = nowElapsedMs + MAX_AHEAD_MS
+        return when (val s = status) {
+            is TimerStatus.Working -> !s.isScreenPaused && s.deadlineTimestampMs > limit
+            is TimerStatus.RestBreak -> s.breakStartedTimestampMs > limit
+            is TimerStatus.Snoozed -> s.deadlineTimestampMs > limit
+            is TimerStatus.Idle -> false
+        }
     }
 
     suspend fun save(snapshot: SessionSnapshot) {
@@ -41,6 +64,10 @@ class SessionStore(private val dataStore: DataStore<Preferences>) {
         prefsStore.edit { preferences ->
             preferences.remove(Keys.SESSION)
         }
+    }
+
+    private companion object {
+        const val MAX_AHEAD_MS = 3_600_000L
     }
 
     private object Keys {

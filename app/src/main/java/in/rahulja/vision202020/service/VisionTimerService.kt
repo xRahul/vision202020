@@ -18,6 +18,7 @@ import `in`.rahulja.vision202020.data.EnforcementMode
 import `in`.rahulja.vision202020.data.PreferencesRepositoryImpl
 import `in`.rahulja.vision202020.data.SessionStore
 import `in`.rahulja.vision202020.data.UserPreferences
+import `in`.rahulja.vision202020.data.currentBootCount
 import `in`.rahulja.vision202020.data.dataStore
 import `in`.rahulja.vision202020.data.sessionDataStore
 import `in`.rahulja.vision202020.domain.PauseReason
@@ -37,6 +38,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -113,18 +115,25 @@ class VisionTimerService : Service() {
             }
         }
 
-        // Persist only real transitions, not every one-second tick.
+        // Persist only real transitions, not every one-second tick. Screen-off time is part of
+        // the key so screen-off/on transitions persist too.
         engine.state
-            .distinctUntilChanged { old, new -> old.sessionKey() == new.sessionKey() }
+            .map { status -> status to (engine.screenOffAtMs != 0L) }
+            .distinctUntilChanged { old, new ->
+                old.first.sessionKey() == new.first.sessionKey() && old.second == new.second
+            }
             .let { flow ->
                 serviceScope.launch {
-                    flow.collect { status ->
+                    flow.collect { (status, _) ->
+                        // Build on the main thread; only the write runs on the IO lane.
+                        val snapshot = SessionSnapshot(
+                            status = status,
+                            isSessionActive = engine.isSessionActive,
+                            bootCount = currentBootCount(),
+                            screenOffAtMs = engine.screenOffAtMs
+                        )
                         applicationScope.launch(sessionWriteDispatcher) {
-                            runCatching {
-                                sessionStore.save(
-                                    SessionSnapshot(status, engine.isSessionActive)
-                                )
-                            }
+                            runCatching { sessionStore.save(snapshot) }
                         }
                     }
                 }
@@ -269,7 +278,7 @@ class VisionTimerService : Service() {
 
     private fun restoreSessionIfNeeded() {
         serviceScope.launch {
-            val snapshot = runCatching { sessionStore.load() }.getOrNull()
+            val snapshot = runCatching { sessionStore.load(currentBootCount()) }.getOrNull()
             if (explicitCommandReceived) return@launch
             if (snapshot == null || !snapshot.isResumable) {
                 stopSelf()

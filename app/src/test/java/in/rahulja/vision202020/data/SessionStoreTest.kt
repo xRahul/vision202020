@@ -53,7 +53,7 @@ class SessionStoreTest {
 
     @Test
     fun `load returns null before anything is saved`() = runTest(testDispatcher) {
-        assertNull(store.load())
+        assertNull(store.load(BOOT, nowElapsedMs = 0L))
     }
 
     @Test
@@ -66,21 +66,23 @@ class SessionStoreTest {
                 pauseReason = PauseReason.NONE,
                 deadlineTimestampMs = 999_000L
             ),
-            isSessionActive = true
+            isSessionActive = true,
+            bootCount = BOOT,
+            screenOffAtMs = 0L
         )
 
         store.save(snapshot)
 
-        assertEquals(snapshot, store.load())
-        assertTrue(store.load()!!.isResumable)
+        assertEquals(snapshot, store.load(BOOT, nowElapsedMs = 0L))
+        assertTrue(store.load(BOOT, nowElapsedMs = 0L)!!.isResumable)
     }
 
     @Test
     fun `clear removes the saved session`() = runTest(testDispatcher) {
-        store.save(SessionSnapshot(TimerStatus.Idle, isSessionActive = false))
+        store.save(SessionSnapshot(TimerStatus.Idle, isSessionActive = false, bootCount = BOOT, screenOffAtMs = 0L))
         store.clear()
 
-        assertNull(store.load())
+        assertNull(store.load(BOOT, nowElapsedMs = 0L))
     }
 
     @Test
@@ -105,12 +107,55 @@ class SessionStoreTest {
 
     @Test
     fun `idle or inactive snapshots are not resumable`() {
-        assertFalse(SessionSnapshot(TimerStatus.Idle, true).isResumable)
+        assertFalse(SessionSnapshot(TimerStatus.Idle, true, BOOT, 0L).isResumable)
         assertFalse(
             SessionSnapshot(
                 TimerStatus.Working(remainingSeconds = 10, elapsedSeconds = 0, totalSeconds = 10),
-                isSessionActive = false
+                isSessionActive = false,
+                bootCount = BOOT,
+                screenOffAtMs = 0L
             ).isResumable
         )
+    }
+
+    @Test
+    fun otherBootIsRejected() = runTest(testDispatcher) {
+        store.save(workingSnapshot(deadline = 10_000L, bootCount = BOOT))
+
+        assertNull(store.load(BOOT + 1, nowElapsedMs = 5_000L))
+    }
+
+    @Test
+    fun unknownBootCountWithFutureDeadlineIsRejected() = runTest(testDispatcher) {
+        val now = 1_000_000L
+        store.save(workingSnapshot(deadline = now + 2 * HOUR_MS, bootCount = -1))
+
+        assertNull(store.load(-1, nowElapsedMs = now))
+    }
+
+    @Test
+    fun unknownBootCountWithPlausibleDeadlineIsKept() = runTest(testDispatcher) {
+        val now = 1_000_000L
+        val snapshot = workingSnapshot(deadline = now + 20 * 60_000L, bootCount = -1)
+        store.save(snapshot)
+
+        assertEquals(snapshot, store.load(-1, nowElapsedMs = now))
+    }
+
+    private fun workingSnapshot(deadline: Long, bootCount: Int) = SessionSnapshot(
+        TimerStatus.Working(
+            remainingSeconds = 10,
+            elapsedSeconds = 0,
+            totalSeconds = 10,
+            deadlineTimestampMs = deadline
+        ),
+        isSessionActive = true,
+        bootCount = bootCount,
+        screenOffAtMs = 0L
+    )
+
+    private companion object {
+        const val BOOT = 5
+        const val HOUR_MS = 3_600_000L
     }
 }

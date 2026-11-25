@@ -1,5 +1,6 @@
 package `in`.rahulja.vision202020.domain
 
+import android.os.SystemClock
 import `in`.rahulja.vision202020.data.UserPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,9 +11,10 @@ import kotlinx.coroutines.flow.asStateFlow
  *
  * Every running state stores an absolute deadline, so a late or missed tick (Doze,
  * main-thread jank, process death) cannot stretch the session. Ticks only translate
- * the deadline into display values.
+ * the deadline into display values. All timestamps are `SystemClock.elapsedRealtime()`
+ * milliseconds, so wall-clock changes (NTP, manual, time zone) cannot move a deadline.
  */
-class VisionTimerEngine(private var prefs: UserPreferences, private val timeProvider: () -> Long = { System.currentTimeMillis() }) {
+class VisionTimerEngine(private var prefs: UserPreferences, private val timeProvider: () -> Long = { SystemClock.elapsedRealtime() }) {
     private val _state = MutableStateFlow<TimerStatus>(TimerStatus.Idle)
     val state: StateFlow<TimerStatus> = _state.asStateFlow()
 
@@ -22,6 +24,9 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
     var onBreakCompleted: (() -> Unit)? = null
 
     private var screenOffTimestampMs: Long = 0L
+
+    /** elapsedRealtime at the last screen-off, or 0 while the screen is on. */
+    val screenOffAtMs: Long get() = screenOffTimestampMs
 
     fun start() {
         _isSessionActive = true
@@ -37,7 +42,7 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
 
     fun restore(snapshot: SessionSnapshot) {
         _isSessionActive = snapshot.isSessionActive
-        screenOffTimestampMs = 0L
+        screenOffTimestampMs = snapshot.screenOffAtMs
         _state.value = snapshot.status
     }
 

@@ -113,7 +113,7 @@ class VisionTimerEngineClockTest {
         first.start()
         fakeTime.advanceSeconds(100)
         first.tickSecond()
-        val snapshot = SessionSnapshot(first.state.value, first.isSessionActive)
+        val snapshot = SessionSnapshot(first.state.value, first.isSessionActive, 1, first.screenOffAtMs)
 
         fakeTime.advanceSeconds(1)
         val restored = VisionTimerEngine(prefs, timeProvider = { fakeTime.currentMillis })
@@ -129,7 +129,7 @@ class VisionTimerEngineClockTest {
     fun `restored expired session triggers break on first tick`() {
         val first = engine()
         first.start()
-        val snapshot = SessionSnapshot(first.state.value, first.isSessionActive)
+        val snapshot = SessionSnapshot(first.state.value, first.isSessionActive, 1, first.screenOffAtMs)
 
         fakeTime.advanceMinutes(21)
         val restored = VisionTimerEngine(prefs, timeProvider = { fakeTime.currentMillis })
@@ -221,5 +221,24 @@ class VisionTimerEngineClockTest {
         val state = engine.state.value as TimerStatus.Working
         assertEquals(1200, state.remainingSeconds)
         assertTrue(engine.isSessionActive)
+    }
+
+    @Test
+    fun wallClockJumpHasNoEffect() {
+        val wall = FakeTimeSource(currentMillis = 1_700_000_000_000L)
+        val engine = engine()
+        engine.start()
+        fakeTime.advanceSeconds(30)
+        engine.tickSecond()
+        val before = engine.state.value as TimerStatus.Working
+
+        // User sets the wall clock forward a day and back: the engine never reads it.
+        wall.advanceMinutes(24 * 60)
+        engine.tickSecond()
+        wall.currentMillis -= 48L * 60 * 60 * 1000
+        engine.tickSecond()
+
+        assertEquals(before, engine.state.value)
+        assertEquals(1170, (engine.state.value as TimerStatus.Working).remainingSeconds)
     }
 }
