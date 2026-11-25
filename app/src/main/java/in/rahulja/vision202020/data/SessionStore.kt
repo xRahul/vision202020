@@ -23,14 +23,16 @@ class SessionStore(private val dataStore: DataStore<Preferences>) {
 
     /**
      * Returns the saved session only if it belongs to the current boot. When the boot count is
-     * unavailable (-1) a deadline far ahead of elapsedRealtime means the clock restarted.
+     * unavailable (-1) a deadline far ahead of elapsedRealtime, or a screen-off time ahead of it,
+     * means the clock restarted.
      */
     suspend fun load(currentBootCount: Int, nowElapsedMs: Long = SystemClock.elapsedRealtime()): SessionSnapshot? {
         val raw = dataStore.data.first()[Keys.SESSION]
         val snapshot = SessionSnapshotCodec.decode(raw) ?: return null
         if (snapshot.bootCount != currentBootCount) return null
+        // Unknown boot: a deadline far ahead, or a screen-off time in the future, means the clock restarted.
         if ((currentBootCount == -1 || snapshot.bootCount == -1) &&
-            snapshot.farFuture(nowElapsedMs)
+            (snapshot.farFuture(nowElapsedMs) || snapshot.screenOffAtMs > nowElapsedMs)
         ) {
             return null
         }

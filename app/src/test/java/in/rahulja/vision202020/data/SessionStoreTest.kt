@@ -142,6 +142,23 @@ class SessionStoreTest {
         assertEquals(snapshot, store.load(-1, nowElapsedMs = now))
     }
 
+    @Test
+    fun unknownBootCountWithFutureScreenOffIsRejected() = runTest(testDispatcher) {
+        val now = 1_000_000L
+        store.save(workingSnapshot(deadline = now + 20 * 60_000L, bootCount = -1).copy(screenOffAtMs = now + 5_000L))
+
+        assertNull(store.load(-1, nowElapsedMs = now))
+    }
+
+    @Test
+    fun unknownBootCountWithPastScreenOffIsKept() = runTest(testDispatcher) {
+        val now = 1_000_000L
+        val snapshot = workingSnapshot(deadline = now + 20 * 60_000L, bootCount = -1).copy(screenOffAtMs = now - 5_000L)
+        store.save(snapshot)
+
+        assertEquals(snapshot, store.load(-1, nowElapsedMs = now))
+    }
+
     private fun workingSnapshot(deadline: Long, bootCount: Int) = SessionSnapshot(
         TimerStatus.Working(
             remainingSeconds = 10,

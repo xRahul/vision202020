@@ -14,7 +14,7 @@ sealed interface TimerStatus {
         val elapsedSeconds: Int,
         val totalSeconds: Int,
         val pauseReason: PauseReason = PauseReason.NONE,
-        // Absolute wall-clock deadline used while running (clock-based, drift-free).
+        // Absolute SystemClock.elapsedRealtime() deadline used while running (monotonic, unaffected by wall-clock changes).
         val deadlineTimestampMs: Long = 0L,
         // Milliseconds left when the timer was paused, used to resume exactly.
         val remainingAtPauseMs: Long = 0L

@@ -148,7 +148,8 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
 
     fun onScreenOn() {
         val wasOff = screenOffTimestampMs > 0L
-        val offDurationMs = if (wasOff) timeProvider() - screenOffTimestampMs else 0L
+        // A restored screen-off time in the future must not yield a negative duration.
+        val offDurationMs = if (wasOff) (timeProvider() - screenOffTimestampMs).coerceAtLeast(0L) else 0L
         val naturalBreakThresholdMs = prefs.naturalBreakMinutes * 60 * 1000L
         screenOffTimestampMs = 0L
 
