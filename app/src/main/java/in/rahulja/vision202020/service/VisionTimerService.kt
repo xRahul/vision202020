@@ -79,8 +79,10 @@ class VisionTimerService : Service() {
         val repo = PreferencesRepositoryImpl(applicationContext.dataStore)
         sessionStore = SessionStore(applicationContext.sessionDataStore)
         engine = VisionTimerEngine(currentPrefs)
-        engine.onBreakCompleted = {
-            soundAlertHelper.playBreakEnded(currentPrefs.soundEnabled, currentPrefs.vibrationEnabled)
+        engine.onBreakCompleted = { audible ->
+            if (audible) {
+                soundAlertHelper.playBreakEnded(currentPrefs.soundEnabled, currentPrefs.vibrationEnabled)
+            }
         }
 
         screenReceiver = ScreenStateReceiver(

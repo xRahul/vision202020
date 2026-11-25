@@ -242,4 +242,60 @@ class VisionTimerEngineTest {
         assertEquals(1200, state.remainingSeconds)
         assertEquals(0, state.elapsedSeconds)
     }
+
+    @Test
+    fun snoozedWithNaturalBreakStartsFreshWorking() {
+        val engine = VisionTimerEngine(defaultPrefs, timeProvider = { fakeTime.currentMillis })
+        engine.start()
+        engine.snooze()
+        engine.onScreenOff()
+        fakeTime.advanceMinutes(5)
+        engine.onScreenOn()
+
+        val state = engine.state.value
+        assertTrue("Expected fresh Working, got $state", state is TimerStatus.Working)
+        state as TimerStatus.Working
+        assertEquals(1200, state.remainingSeconds)
+        assertEquals(PauseReason.NONE, state.pauseReason)
+    }
+
+    @Test
+    fun restBreakEndingWhileScreenOffCompletesSilently() {
+        val engine = VisionTimerEngine(defaultPrefs, timeProvider = { fakeTime.currentMillis })
+        val audibleCalls = mutableListOf<Boolean>()
+        engine.onBreakCompleted = { audibleCalls.add(it) }
+        engine.start()
+        engine.triggerBreak()
+        engine.onScreenOff()
+        fakeTime.advanceSeconds(30)
+        engine.onScreenOn()
+
+        assertTrue(engine.state.value is TimerStatus.Working)
+        assertEquals(listOf(false), audibleCalls)
+    }
+
+    @Test
+    fun userCompleteBreakIsAudible() {
+        val engine = VisionTimerEngine(defaultPrefs, timeProvider = { fakeTime.currentMillis })
+        val audibleCalls = mutableListOf<Boolean>()
+        engine.onBreakCompleted = { audibleCalls.add(it) }
+        engine.start()
+        engine.triggerBreak()
+        engine.completeBreak()
+
+        assertEquals(listOf(true), audibleCalls)
+    }
+
+    @Test
+    fun restBreakEndingWithScreenOnIsAudible() {
+        val engine = VisionTimerEngine(defaultPrefs, timeProvider = { fakeTime.currentMillis })
+        val audibleCalls = mutableListOf<Boolean>()
+        engine.onBreakCompleted = { audibleCalls.add(it) }
+        engine.start()
+        engine.triggerBreak()
+        fakeTime.advanceSeconds(20)
+        engine.tickSecond()
+
+        assertEquals(listOf(true), audibleCalls)
+    }
 }

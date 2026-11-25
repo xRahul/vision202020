@@ -11,6 +11,14 @@ enum class EnforcementMode {
     NOTIFICATION_ONLY
 }
 
+/** Bounds of the options Settings offers; the repository clamps to them at read and write. */
+object PreferenceLimits {
+    val WORK_MINUTES = 10..30
+    val REST_SECONDS = 15..60
+    val NATURAL_BREAK_MINUTES = 2..15
+    val SNOOZE_MINUTES = 1..10
+}
+
 data class UserPreferences(
     val workDurationMinutes: Int = 20,
     val restDurationSeconds: Int = 20,

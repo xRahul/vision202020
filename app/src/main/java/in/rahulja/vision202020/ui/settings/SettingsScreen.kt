@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import `in`.rahulja.vision202020.R
 import `in`.rahulja.vision202020.data.AppThemeMode
 import `in`.rahulja.vision202020.data.EnforcementMode
+import `in`.rahulja.vision202020.data.PreferenceLimits
 import `in`.rahulja.vision202020.data.UserPreferences
 import `in`.rahulja.vision202020.ui.about.AboutLibrariesActivity
 
@@ -153,7 +154,7 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf(10, 15, 20, 25, 30).forEach { mins ->
+                    listOf(10, 15, 20, 25, 30).filter { it in PreferenceLimits.WORK_MINUTES }.forEach { mins ->
                         ThemeChip(
                             selected = preferences.workDurationMinutes == mins,
                             label = stringResource(R.string.duration_minutes_short, mins),
@@ -174,7 +175,7 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf(15, 20, 30, 45, 60).forEach { secs ->
+                    listOf(15, 20, 30, 45, 60).filter { it in PreferenceLimits.REST_SECONDS }.forEach { secs ->
                         ThemeChip(
                             selected = preferences.restDurationSeconds == secs,
                             label = stringResource(R.string.duration_seconds_short, secs),
@@ -195,7 +196,7 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf(2, 5, 10, 15).forEach { mins ->
+                    listOf(2, 5, 10, 15).filter { it in PreferenceLimits.NATURAL_BREAK_MINUTES }.forEach { mins ->
                         ThemeChip(
                             selected = preferences.naturalBreakMinutes == mins,
                             label = stringResource(R.string.duration_minutes_short, mins),
@@ -242,7 +243,7 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf(1, 3, 5, 10).forEach { mins ->
+                    listOf(1, 3, 5, 10).filter { it in PreferenceLimits.SNOOZE_MINUTES }.forEach { mins ->
                         ThemeChip(
                             selected = preferences.snoozeMinutes == mins,
                             label = stringResource(R.string.duration_minutes_short, mins),

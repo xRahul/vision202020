@@ -21,7 +21,7 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
     private var _isSessionActive: Boolean = false
     val isSessionActive: Boolean get() = _isSessionActive
 
-    var onBreakCompleted: (() -> Unit)? = null
+    var onBreakCompleted: ((audible: Boolean) -> Unit)? = null
 
     private var screenOffTimestampMs: Long = 0L
 
@@ -156,8 +156,14 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
 
         when (val current = _state.value) {
             is TimerStatus.RestBreak, is TimerStatus.Snoozed -> {
-                // Break/snooze countdown advances while the screen is off.
-                tickSecond()
+                if (current is TimerStatus.Snoozed && wasOff && offDurationMs >= naturalBreakThresholdMs) {
+                    // Long enough away counts as rest, same as from Working.
+                    _state.value = freshWorking(PauseReason.NONE)
+                } else {
+                    // Break/snooze countdown advances while the screen is off. A break that
+                    // ended meanwhile completes silently: the user is only now looking.
+                    advance(audible = false)
+                }
             }
 
             is TimerStatus.Working -> {
@@ -189,14 +195,16 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
         )
     }
 
-    fun completeBreak() {
+    fun completeBreak() = completeBreak(audible = true)
+
+    private fun completeBreak(audible: Boolean) {
         // Stale notification actions must not start a session out of nothing.
         if (!_isSessionActive) return
         val isScreenCurrentlyOff = screenOffTimestampMs > 0L
         _state.value = freshWorking(
             if (isScreenCurrentlyOff) PauseReason.SCREEN_OFF else PauseReason.NONE
         )
-        onBreakCompleted?.invoke()
+        onBreakCompleted?.invoke(audible)
     }
 
     fun triggerBreak() {
@@ -209,7 +217,9 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
         )
     }
 
-    fun tickSecond() {
+    fun tickSecond() = advance(audible = true)
+
+    private fun advance(audible: Boolean) {
         val now = timeProvider()
         when (val current = _state.value) {
             is TimerStatus.Working -> {
@@ -233,7 +243,7 @@ class VisionTimerEngine(private var prefs: UserPreferences, private val timeProv
                 val elapsedSec = ((now - current.breakStartedTimestampMs) / 1000L).toInt()
                 val newRemaining = (current.totalSeconds - elapsedSec).coerceAtLeast(0)
                 if (newRemaining <= 0) {
-                    completeBreak()
+                    completeBreak(audible)
                 } else if (newRemaining != current.remainingSeconds) {
                     _state.value = current.copy(remainingSeconds = newRemaining)
                 }

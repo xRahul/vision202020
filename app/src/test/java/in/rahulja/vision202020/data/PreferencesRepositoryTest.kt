@@ -3,6 +3,8 @@ package `in`.rahulja.vision202020.data
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -82,5 +84,29 @@ class PreferencesRepositoryTest {
         assertEquals(EnforcementMode.NOTIFICATION_ONLY, updated.enforcementMode)
         assertTrue(updated.strictMode)
         assertEquals(AppThemeMode.LIGHT, updated.appTheme)
+    }
+
+    @Test
+    fun outOfRangeValuesAreClamped() = runTest(testDispatcher) {
+        repository.updateWorkDuration(0)
+        repository.updateRestDuration(99999)
+        repository.updateNaturalBreakMinutes(-4)
+        repository.updateSnoozeMinutes(1000)
+        val written = repository.preferencesFlow.first()
+        assertEquals(PreferenceLimits.WORK_MINUTES.first, written.workDurationMinutes)
+        assertEquals(PreferenceLimits.REST_SECONDS.last, written.restDurationSeconds)
+        assertEquals(PreferenceLimits.NATURAL_BREAK_MINUTES.first, written.naturalBreakMinutes)
+        assertEquals(PreferenceLimits.SNOOZE_MINUTES.last, written.snoozeMinutes)
+    }
+
+    @Test
+    fun outOfRangeStoredValuesAreClampedOnRead() = runTest(testDispatcher) {
+        dataStore.edit {
+            it[intPreferencesKey("work_duration_minutes")] = 0
+            it[intPreferencesKey("rest_duration_seconds")] = 99999
+        }
+        val prefs = repository.preferencesFlow.first()
+        assertEquals(PreferenceLimits.WORK_MINUTES.first, prefs.workDurationMinutes)
+        assertEquals(PreferenceLimits.REST_SECONDS.last, prefs.restDurationSeconds)
     }
 }

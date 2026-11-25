@@ -54,10 +54,10 @@ class PreferencesRepositoryImpl(private val dataStore: DataStore<Preferences>) :
             }
         }
         .map { preferences ->
-            val workMin = preferences[PreferencesKeys.WORK_DURATION_MINUTES] ?: 20
-            val restSec = preferences[PreferencesKeys.REST_DURATION_SECONDS] ?: 20
-            val naturalBreakMin = preferences[PreferencesKeys.NATURAL_BREAK_MINUTES] ?: 5
-            val snoozeMin = preferences[PreferencesKeys.SNOOZE_MINUTES] ?: 5
+            val workMin = (preferences[PreferencesKeys.WORK_DURATION_MINUTES] ?: 20).coerceIn(PreferenceLimits.WORK_MINUTES)
+            val restSec = (preferences[PreferencesKeys.REST_DURATION_SECONDS] ?: 20).coerceIn(PreferenceLimits.REST_SECONDS)
+            val naturalBreakMin = (preferences[PreferencesKeys.NATURAL_BREAK_MINUTES] ?: 5).coerceIn(PreferenceLimits.NATURAL_BREAK_MINUTES)
+            val snoozeMin = (preferences[PreferencesKeys.SNOOZE_MINUTES] ?: 5).coerceIn(PreferenceLimits.SNOOZE_MINUTES)
             val modeStr = preferences[PreferencesKeys.ENFORCEMENT_MODE] ?: EnforcementMode.BLOCKER_OVERLAY.name
             val strict = preferences[PreferencesKeys.STRICT_MODE] ?: false
             val sound = preferences[PreferencesKeys.SOUND_ENABLED] ?: true
@@ -93,25 +93,25 @@ class PreferencesRepositoryImpl(private val dataStore: DataStore<Preferences>) :
 
     override suspend fun updateWorkDuration(minutes: Int) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.WORK_DURATION_MINUTES] = minutes
+            preferences[PreferencesKeys.WORK_DURATION_MINUTES] = minutes.coerceIn(PreferenceLimits.WORK_MINUTES)
         }
     }
 
     override suspend fun updateRestDuration(seconds: Int) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.REST_DURATION_SECONDS] = seconds
+            preferences[PreferencesKeys.REST_DURATION_SECONDS] = seconds.coerceIn(PreferenceLimits.REST_SECONDS)
         }
     }
 
     override suspend fun updateNaturalBreakMinutes(minutes: Int) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.NATURAL_BREAK_MINUTES] = minutes
+            preferences[PreferencesKeys.NATURAL_BREAK_MINUTES] = minutes.coerceIn(PreferenceLimits.NATURAL_BREAK_MINUTES)
         }
     }
 
     override suspend fun updateSnoozeMinutes(minutes: Int) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.SNOOZE_MINUTES] = minutes
+            preferences[PreferencesKeys.SNOOZE_MINUTES] = minutes.coerceIn(PreferenceLimits.SNOOZE_MINUTES)
         }
     }
 
