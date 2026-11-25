@@ -14,6 +14,7 @@ import `in`.rahulja.vision202020.data.sessionDataStore
 import `in`.rahulja.vision202020.domain.PauseReason
 import `in`.rahulja.vision202020.domain.SessionSnapshot
 import `in`.rahulja.vision202020.domain.TimerStatus
+import `in`.rahulja.vision202020.domain.VisionTimerEngine
 import `in`.rahulja.vision202020.domain.VisionTimerStateHolder
 import io.mockk.every
 import io.mockk.mockk
@@ -167,6 +168,43 @@ class VisionTimerServiceToggleTest {
 
         assertTrue("strict break must survive a non-UI complete", VisionTimerStateHolder.state.value is TimerStatus.RestBreak)
         assertFalse(shadowOf(service).isStoppedBySelf)
+    }
+
+    @Test
+    fun staleCompleteBreakDoesNotResetRestoredWorkingSession() {
+        runBlocking {
+            store.save(
+                SessionSnapshot(
+                    status = TimerStatus.Working(
+                        remainingSeconds = 600,
+                        elapsedSeconds = 600,
+                        totalSeconds = 1200,
+                        pauseReason = PauseReason.NONE,
+                        deadlineTimestampMs = SystemClock.elapsedRealtime() + 600_000L
+                    ),
+                    isSessionActive = true,
+                    bootCount = 1,
+                    screenOffAtMs = 0L
+                )
+            )
+        }
+        val controller = Robolectric.buildService(VisionTimerService::class.java, intent(VisionTimerService.ACTION_RESTORE))
+        val service = controller.get()
+        val gate = CompletableDeferred<Unit>()
+        service.beforeRestoreLoad = { gate.await() }
+        var breakEndedCalls = 0
+        controller.create().startCommand(0, 1)
+        val engineField = VisionTimerService::class.java.getDeclaredField("engine").apply { isAccessible = true }
+        (engineField.get(service) as VisionTimerEngine).onBreakCompleted = { breakEndedCalls++ }
+        controller.withIntent(intent(VisionTimerService.ACTION_COMPLETE_BREAK)).startCommand(0, 2)
+        gate.complete(Unit)
+
+        assertTrue(awaitCondition { VisionTimerStateHolder.state.value is TimerStatus.Working })
+        pumpFor(500)
+
+        val working = VisionTimerStateHolder.state.value as TimerStatus.Working
+        assertTrue("stale complete must keep the restored cycle", working.remainingSeconds <= 600)
+        assertEquals("no break-ended alert for a session that is not on break", 0, breakEndedCalls)
     }
 
     @Test

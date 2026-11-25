@@ -250,6 +250,8 @@ class VisionTimerService : Service() {
     }
 
     private fun completeBreakGated(fromBreakUi: Boolean) {
+        // A stale action must not reset a Working or Snoozed session or play the break-ended alert.
+        if (engine.state.value !is TimerStatus.RestBreak) return
         if (blockedByStrictMode() && !fromBreakUi) repostBreakAlert() else engine.completeBreak()
     }
 
