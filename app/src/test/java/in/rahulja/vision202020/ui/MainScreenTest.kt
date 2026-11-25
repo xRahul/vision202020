@@ -60,7 +60,7 @@ class MainScreenTest {
 
     @Test
     @Config(qualifiers = "w392dp-h800dp-port")
-    fun notificationCardOpensSettingsAfterPermanentDenial() {
+    fun notificationAndBatteryCardButtonsInvokeCallbacks() {
         var notificationClicks = 0
         var batteryClicks = 0
 
@@ -127,7 +127,6 @@ class MainScreenTest {
 
         composeTestRule.onNodeWithText("Open Alert Settings").performScrollTo().performClick()
 
-        assertEquals(1, channelClicks)
         assertEquals(1, channelClicks)
     }
 
