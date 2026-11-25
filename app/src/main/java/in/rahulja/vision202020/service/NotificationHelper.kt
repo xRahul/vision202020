@@ -154,11 +154,14 @@ class NotificationHelper(private val context: Context) {
                     context.getString(R.string.action_snooze, snoozeMinutes),
                     servicePendingIntent(6, VisionTimerService.ACTION_SNOOZE)
                 )
-                builder.addAction(
-                    android.R.drawable.ic_menu_close_clear_cancel,
-                    context.getString(R.string.action_stop),
-                    servicePendingIntent(4, VisionTimerService.ACTION_STOP)
-                )
+                // Stop would end the break in one tap, so strict mode leaves it to the main app.
+                if (!strictMode) {
+                    builder.addAction(
+                        android.R.drawable.ic_menu_close_clear_cancel,
+                        context.getString(R.string.action_stop),
+                        servicePendingIntent(4, VisionTimerService.ACTION_STOP)
+                    )
+                }
             }
 
             is TimerStatus.Snoozed -> {

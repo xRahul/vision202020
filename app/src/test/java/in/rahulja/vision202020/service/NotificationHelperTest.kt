@@ -98,11 +98,19 @@ class NotificationHelperTest {
     }
 
     @Test
-    fun strictTimerNotificationDuringBreakHasNoLookedAway() {
+    fun strictTimerNotificationDuringBreakHasOnlySnooze() {
         notificationHelper.createChannels()
         val notification = notificationHelper.buildTimerNotification(breakStatus, 5, strictMode = true)
         val titles = notification.actions.map { it.title.toString() }
-        assertEquals(listOf("Snooze 5m", "Stop"), titles)
+        assertEquals(listOf("Snooze 5m"), titles)
+    }
+
+    @Test
+    fun nonStrictTimerNotificationDuringBreakKeepsStop() {
+        notificationHelper.createChannels()
+        val notification = notificationHelper.buildTimerNotification(breakStatus, 5, strictMode = false)
+        val titles = notification.actions.map { it.title.toString() }
+        assertEquals(listOf("I Looked Away", "Snooze 5m", "Stop"), titles)
     }
 
     @Test
