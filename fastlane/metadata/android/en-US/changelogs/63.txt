@@ -1,0 +1,1 @@
+- fix Glance widget theming, text contrast, throttling, and lifecycle handling
