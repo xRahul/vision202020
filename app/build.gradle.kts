@@ -126,6 +126,14 @@ android {
         unitTests {
             isReturnDefaultValues = false
             isIncludeAndroidResources = true
+            // Robolectric fetches its SDK jar from repo1.maven.org at test runtime,
+            // outside Gradle's dependency cache; point it at the mirror to avoid 429s.
+            all {
+                it.systemProperty(
+                    "robolectric.dependency.repo.url",
+                    "https://maven-central.storage-download.googleapis.com/maven2"
+                )
+            }
         }
     }
 
