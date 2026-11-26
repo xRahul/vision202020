@@ -12,9 +12,9 @@ Repo: https://github.com/xRahul/vision202020.git
 AllowedAPKSigningKeys: 9ec14141874c3a8f2e3843f52582c311880fe5417eb6f097fdf8515db92f2511
 Binaries: https://github.com/xRahul/vision202020/releases/download/v%v/in.rahulja.vision202020-v%v-release.apk
 Builds:
-  - versionName: 1.1.9
-    versionCode: 63
-    commit: fc9bf39ed802c73e89dd5a76e5c4df128c9a5b78
+  - versionName: 1.1.10
+    versionCode: 107
+    commit: 98e03f17157680e2a602864491854d3934cec653
     subdir: app
     gradle:
       - yes
@@ -22,5 +22,5 @@ Builds:
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
 UpdateCheckData: version.properties|versionCode=(\d+)|.|versionName=(.+)
-CurrentVersion: 1.1.9
-CurrentVersionCode: 63
+CurrentVersion: 1.1.10
+CurrentVersionCode: 107
