@@ -50,7 +50,9 @@ jobs:
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
 
       - name: Build for CodeQL
-        run: ./gradlew assembleDebug -x lint -x test
+        # --no-build-cache: a cache hit skips compilation, so the Java extractor
+        # sees no source and CodeQL fails with "didn't build any of it".
+        run: ./gradlew assembleDebug -x lint -x test --no-build-cache
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
