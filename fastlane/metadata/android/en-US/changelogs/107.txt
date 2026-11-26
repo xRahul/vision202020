@@ -1,0 +1,10 @@
+- distinct skip action label, announce skip confirm
+- ignore break skip until preferences have loaded
+- hide Stop during strict rest break
+- contain BootReceiver failures, make its tests deterministic
+- clear stale screen-off time on restore, defer commands until restore finishes
+- tolerate null goAsync result in BootReceiver
+- round spoken time up to whole minutes
+- ignore stale complete-break unless on break
+- keep typography on timer text, round spoken time, harden widget prefs
+- reject futur
